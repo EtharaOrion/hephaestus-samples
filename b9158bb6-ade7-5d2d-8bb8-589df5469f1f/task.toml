@@ -1,0 +1,34 @@
+schema_version = "1.4"
+name = "hephaestus/moe_routed_fwdbwd"
+editable_paths = ["kernel.py"]
+tags = ["optimization", "bounded-continuous"]
+
+[metadata]
+surface = "fwdbwd"
+max_timeout_hours = 1.5
+max_attempts = 100
+final_selection = "best"
+refinement_loop = "each iteration solves, submits and is graded; the trajectory is summarised and the next iteration starts from that summary carrying every prior approach and its reward"
+
+[metadata.score_schema]
+contract_path = "/logs/verifier/score.json"
+metrics = ["score", "process"]
+score_range = [0.0, 1.0]
+score_full_reward = 1.0
+score_definition = "geomean over hidden shapes of min(production_time/candidate_time,1); 0 unless every gate passes"
+
+[agent]
+max_timeout_sec = 5400.0
+attempt_cap = 100
+network_mode = "allowlist"
+allowed_hosts = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
+[environment]
+gpus = 1
+gpu_types = ["H100"]
+network_mode = "no-network"
+
+[verifier]
+environment_mode = "shared"
+network_mode = "allowlist"
+allowed_hosts = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
