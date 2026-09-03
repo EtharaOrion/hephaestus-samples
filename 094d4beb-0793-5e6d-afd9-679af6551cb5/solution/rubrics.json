@@ -1,0 +1,159 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G0_trusted_entrypoint.clean\" is true, recording that importing the submitted module completed without raising SystemExit or otherwise aborting the trusted entrypoint.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.11,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G1_forbidden.clean\" is true and \"checks.G1_forbidden.hits\" is an empty list, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.13,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G2_correctness.clean\" is true with \"checks.G2_correctness.failure_count\" equal to 0 and \"checks.G2_correctness.failures\" empty, so both the forward output and every input gradient matched reference.py across the randomized-scale trials.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.12,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G3_speed.geomean_fraction_of_sota\" is at least the G3 pass bar and agrees with the headline \"fraction_of_sota\", so the candidate's geometric mean speed relative to the production kernel clears the gate.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "coverage",
+      "weight": 0.09,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G3_speed.per_shape\" carries one finite, strictly positive measured fraction for every hidden shape in the timing sweep, so no shape was skipped, errored out, or excluded from the geometric mean.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.11,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time is dominated by kernels the candidate wrote rather than by library calls.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.07,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G4_written_kernel.declared\" is a non-empty list of triton.jit kernels and \"checks.G4_written_kernel.device_us_declared\" is positive and no greater than \"checks.G4_written_kernel.device_us_total\", so the adoption ratio was computed from actually declared and actually executed kernels.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "RUNoracle",
+      "dimension": "integrity",
+      "weight": 0.07,
+      "evaluation_target": "score.json",
+      "criterion": "\"verifier_incomplete\" is false and \"judge_unavailable\" is false while \"oracle_mode\" records the real production oracle, so \"outcome\" reflects a complete run measured against the true baseline rather than a degraded or stubbed one.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.06,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source splits the sequence into fixed-size chunks and separates the work into an intra-chunk part computed in parallel within a chunk and a cross-chunk part that carries a running state forward one chunk at a time, rather than stepping the recurrence position by position.",
+      "judgment": "ORDERING",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The per-chunk sequential rank-1 corrections are collapsed into a WY style block representation, built once per chunk by inverting or forward-substituting a small triangular matrix and then applied as dense matrix multiplies.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Decay is factorised through cumulative log-space sums so that any position-pair or state-to-position weight is formed as a ratio or difference of precomputed cumulative terms, never by recomputing a running product per element.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLbwd",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The backward pass is implemented in the candidate's own Triton kernels as a reverse chunk scan that recomputes or carries the chunk states and emits every input gradient, mirroring the same chunked decomposition used in the forward pass.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 291cde5eb2f646bdd8b7a65b2d9e020499aa1f717aca1e853a0fc60c70f0b3ad
+FORGE-CANARY-SLOT-1 1f880b229b7aba1f0d26116887035113fd68d9b50e9638140bfa96b898206960
+FORGE-CANARY-SLOT-2 4dc73cace413b93e20fd114987e457a196f0a4ad4b43222c1ca235edcfc5e602
+FORGE-CANARY-SLOT-3 7d17190aceccf602a2b3f4a1af66e4c5c86a0ae61f854c04e87b211b036eb791
+FORGE-CANARY-END

@@ -1,0 +1,158 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G0_trusted_entrypoint.clean\" is true, meaning the submitted module was imported and its entrypoint resolved without the harness raising SystemExit.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G1_forbidden.clean\" is true and \"checks.G1_forbidden.hits\" is an empty list, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.18,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G2_correctness.clean\" is true and \"checks.G2_correctness.failure_count\" equals 0 with \"checks.G2_correctness.failures\" empty, so both the output and the input gradients matched reference.py on every randomized-scale trial.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2b",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"verifier_incomplete\" is false and \"oracle_mode\" names the full reference oracle rather than a degraded or stubbed fallback, so the G2 verdict was produced by a complete comparison rather than a skipped one.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G3_speed.geomean_fraction_of_sota\" is at least 0.80 and the top level \"fraction_of_sota\" reports that same geometric mean value.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "Every entry of \"checks.G3_speed.per_shape\" carries a recorded fraction of the production kernel that is at least half of \"checks.G3_speed.geomean_fraction_of_sota\", so the aggregate win is not carried by one hidden shape while another collapses.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.12,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time is dominated by kernels the candidate wrote.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G4_written_kernel.declared\" is a non-empty list of triton.jit kernels defined in the submission, \"checks.G4_written_kernel.device_us_total\" is greater than zero, and \"checks.G4_written_kernel.device_us_declared\" divided by that total reproduces \"checks.G4_written_kernel.adoption\".",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.06,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source implements the reference decomposition as a chunked state recurrence in which a running state is carried across chunks and each chunk output is formed as the sum of a cross-chunk term read from the incoming carried state and a causal intra-chunk term computed inside the chunk tile, with the state updated once per chunk rather than once per token.",
+      "judgment": "ORDERING",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Inside a chunk the per-token rank-1 corrections are collapsed into a WY style representation obtained by inverting or forward-substituting the small strictly triangular in-chunk interaction matrix, and no sequential Python or Triton loop applies the corrections one token at a time.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The decay is factorised into a cumulative form per chunk and applied as differences or ratios of cumulative log decays within the chunk so that every exponentiated exponent stays non-positive, rather than multiplying raw per-step decay products that would underflow or overflow across the chunk.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLbwd",
+      "dimension": "correctness",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The backward pass is implemented in the candidate's own kernels as a reverse chunked recurrence that recomputes or reloads chunk states and propagates a reverse-carried gradient state, rather than delegating gradients to autograd over a slow elementwise reimplementation of the reference path.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 4e7e762d8b3dad1dcfb246d2edc3390b8a553be5b596e14b1c00221d229e5cae
+FORGE-CANARY-SLOT-1 f08bb6ec1361f90cd08417c20f95f8ec81e31dc6bcf31a3558867cdecfbd918b
+FORGE-CANARY-SLOT-2 8c5423ffa0358f6242ad22232d8bca7a153d783182ad9b217f7d2e58727be8fc
+FORGE-CANARY-SLOT-3 7fa891e696b67473713e10a3920721b855ce5dff2494d7bc9dff7fbe0536f295
+FORGE-CANARY-END

@@ -1,0 +1,144 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G0_trusted_entrypoint.clean\" is true, recording that importing the submitted module executed to completion without raising SystemExit or otherwise refusing the trusted entrypoint.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G1_forbidden.hits\" is an empty list and \"checks.G1_forbidden.clean\" is true, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G2_correctness.failure_count\" is 0 with \"checks.G2_correctness.failures\" empty and \"checks.G2_correctness.clean\" true, meaning the output matched reference.py under randomized scale.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "VERoracle",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"verifier_incomplete\" is false and \"oracle_mode\" names the real production oracle rather than a degraded or stubbed fallback, so the recorded verdict was produced by a complete run.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G3_speed.geomean_fraction_of_sota\" is at least 0.80, so across the hidden shapes the candidate reaches at least four fifths of the production kernel's throughput.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G3_speed.per_shape\" is non-empty and no individual shape entry records a fraction below 0.50, so the geometric mean is not carried by one favourable shape while another collapses.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.12,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time is dominated by kernels the candidate wrote.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G4_written_kernel.declared\" lists at least one triton.jit kernel name and \"checks.G4_written_kernel.device_us_declared\" is greater than zero and no larger than \"checks.G4_written_kernel.device_us_total\", so the adoption ratio is backed by real attributed device microseconds.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.08,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source tiles the sequence into fixed-size chunks and computes each output as the sum of an intra-chunk masked-matmul term and a cross-chunk term read from a chunk-level state that is carried by a sequential recurrence over chunks, rather than scanning every timestep.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Within a chunk the source contains no per-timestep loop applying rank-1 corrections one at a time, having instead collapsed them into a WY style representation obtained by inverting a small triangular matrix once per chunk.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The decay is factorised through a per-chunk cumulative log-decay so that within-chunk relative decays are ratios of prefix factors applied once to the query, key and state tiles, instead of being recomputed for every query-key pair.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 4f246aa291e433a8e030563862493822331fb1392d77d71f86ad3e7c8f1cfe27
+FORGE-CANARY-SLOT-1 996489b2cafa7a5b8fe7e241faa945ee167ffbc6692ef43396b04ef87eb6d764
+FORGE-CANARY-SLOT-2 869d801445f7bc24159c0b502b1cd254bd2da38ae8b4574cf1751281f4ba7413
+FORGE-CANARY-SLOT-3 7803ba2d4ce892e0da20b10fa5754e1928e0caad133f596c2147ea29f1f338bd
+FORGE-CANARY-END

@@ -1,0 +1,511 @@
+schema: forge.grounding/v4
+bundle_family: selection_argmax_mixed_dtype_fwd
+identity:
+  anchor_kind: torch_builtin
+  anchor_symbol: torch.argmax
+  anchor_note: 'CUDA torch.argmax (CUB single-pass tree reduction) is the TIMING
+
+    DENOMINATOR ONLY. Argmax is memory-bound at HBM peak on the anchor,
+
+    so the reachable fraction is small. The anchor''s tie-break is
+
+    unspecified across CUB releases, so it is never consulted for
+
+    correctness -- reference.py''s stable argsort defines the exact
+
+    lower-index tie-break. No vendorable source tree exists, so the
+
+    shingle scan records available:false and never gates; the FORBIDDEN
+
+    symbol scan still runs and covers .argmax and torch.argmax.'
+  role: denominator and nothing else. The anchor is available to the verifier for timing. It is never
+    the edit surface, and the agent may read it but may not call it.
+  sota_repository: torch.argmax
+  sota_commit: not pinned; the anchor is a library symbol, not a checkout
+  sota_commit_utc: '2025-01-01T00:00:00Z'
+  train_cutoff: '2025-01-01'
+  license: upstream license of the anchor library
+task:
+  editable: kernel.py
+  reference: reference.py
+  agent_visible:
+  - instruction.md
+  - kernel.py
+  - reference.py
+  - bench.py
+  surface: forward
+  objective: implement argmax_mixed_dtype in kernel.py for the H100 and get as close as possible to the
+    speed of the production anchor, without changing what it computes.
+discovery:
+  note: >-
+    FORGE.md 10a.1. Graded values a solver can obtain only by running against the built
+    environment. Each appears in this file, is established in the container at grade time,
+    and is absent from the bound statement_closure verbatim and as paraphrase. recompute.py
+    derives each from its grounding source, never from a statement literal.
+  values:
+    - name: target_fraction_of_sota
+      grounding_source: grading.target_fraction_of_sota
+      environment_state: tests/target.json
+      absent_from_closure: true
+      obtained_by: >-
+        measuring the candidate against the production anchor on the graded cells; the pass
+        bar is never stated, so a solver learns where it stands only by being graded
+    - name: starter_fraction_of_sota
+      grounding_source: grading.starter_fraction_of_sota
+      environment_state: tests/target.json
+      absent_from_closure: true
+      obtained_by: >-
+        grading the shipped starter; the statement says the starter is suboptimal but never
+        by how much, so the headroom is discovered rather than read
+    - name: graded_shape_set
+      grounding_source: grading.definition
+      environment_state: tests/hidden_shapes.json
+      absent_from_closure: true
+      obtained_by: >-
+        empirical probing across shape and dtype; the statement says timing runs on hidden
+        shapes but names none, so which cells dominate the geomean is discovered
+    - name: anchor_device_time
+      grounding_source: identity.anchor_symbol
+      environment_state: tests/target.json
+      absent_from_closure: true
+      obtained_by: >-
+        timing the production anchor in the graded environment; the anchor is readable but
+        its measured device time on this host is not stated
+forbidden_symbols:
+- torch.topk
+- torch.sort
+- torch.argsort
+- torch.msort
+- torch.kthvalue
+- torch.unique
+- torch.median
+- torch.nanmedian
+- torch.quantile
+- torch.nanquantile
+- .topk
+- .sort
+- .argsort
+- .msort
+- .kthvalue
+- .unique
+- .median
+- .quantile
+- torch.argmax
+- .argmax
+shapes:
+  seed_base: 75817
+  published:
+    p1:
+      R: 512
+      N: 65536
+    p2:
+      R: 128
+      N: 524288
+  published_note: the published shapes are what bench.py times and are deliberately not the graded set.
+    The graded shapes, scales and value distributions stay hidden, so a candidate tuned only to what it
+    can see does not transfer.
+  graded:
+    g1:
+      R: 256
+      N: 65536
+      dtypes:
+      - float32
+      - bfloat16
+      - float16
+    g2:
+      R: 128
+      N: 262144
+      dtypes:
+      - float32
+      - bfloat16
+      - float16
+  correctness_only:
+    c1:
+      R: 33
+      N: 999983
+      dtypes:
+      - float32
+      - bfloat16
+      - float16
+    c2:
+      R: 7
+      N: 1
+      dtypes:
+      - float32
+      - bfloat16
+      - float16
+    c3:
+      R: 64
+      N: 65536
+      quantize: 16
+      dtypes:
+      - float32
+      - bfloat16
+      - float16
+    c4:
+      R: 8
+      N: 99991
+      specials: 1
+      dtypes:
+      - float32
+      - bfloat16
+      - float16
+    c5:
+      R: 32
+      N: 65536
+      near_max: 1
+      dtypes:
+      - float32
+      - bfloat16
+      - float16
+    c6:
+      R: 2048
+      N: 1200000
+      dtypes:
+      - bfloat16
+      - float16
+  graded_budget_note: 'trimmed to <=6 timed configs (shape x dtype) so a 20-attempt run fits the 6h max_timeout;
+    dropped [''g3'', ''g4'']. Correctness coverage is unchanged: it lives in correctness_only, which is
+    untimed.'
+grading:
+  metric: fraction_of_sota
+  definition: per graded shape r = t_anchor / t_candidate clipped into [0, 1]; R is the geometric mean
+    of r; the score is R relative to the target and is zero unless every gate passes.
+  target_fraction_of_sota: 0.5778
+  starter_fraction_of_sota: 0.293096
+  frontier_defeat_floor_S: 0.15
+  written_kernel_adoption_floor: 0.6
+  adoption_floor: 0.6
+  tolerances:
+    float32:
+      atol: 0.0
+      rtol: 0.0
+    bfloat16:
+      atol: 0.0
+      rtol: 0.0
+    float16:
+      atol: 0.0
+      rtol: 0.0
+  exactness: exact equality
+oracle:
+  path: solution/oracle_kernel.py
+  strategy: independent_reimplementation
+  reaches_full_reward: true
+  role: the private oracle establishes that the full-reward point of the metric is reachable on this hardware.
+    It is never shipped to the agent.
+distribution_invariance:
+  rule: the checked draw and the timed draw are the same draw
+  why: a candidate that could tell the correctness distribution from the timed one could be correct on
+    one and fast on the other.
+environment:
+  base_image: nvidia/cuda:12.8.0-devel-ubuntu24.04@sha256:813c3b834aaafe2df2891f9a840c412a4df3c073dd9e0ac75aab810ed82a5b48
+  triton_floor: 3.7.1
+  triton_floor_reason: measured on this host. Below this floor the graded denominator does not run correctly
+    on Hopper, which makes the bundle ungradable rather than merely slower.
+  network: no-network
+  single_h100: true
+  harbor_enum_note: Harbor's TaskConfig accepts exactly no-network, public or allowlist; the literal string
+    full-internet is rejected at task load.
+checkers:
+  G0:
+    name: trusted_entrypoint
+    verifies: the submitted module imports and exposes argmax_mixed_dtype. A candidate that calls sys.exit
+      during import is trapped rather than terminating the grader.
+  G1:
+    name: forbidden_symbols
+    verifies: the submission neither imports nor calls the production kernel or any equivalent library
+      implementation, scanned over the source with comments stripped so that citing a symbol stays legal
+      and calling it does not.
+  G2:
+    name: correctness
+    verifies: the output agrees with reference.py on every hidden configuration, on the same randomly
+      scaled draw that is timed, so no branch can tell the checked distribution from the timed one.
+  G3:
+    name: speed
+    verifies: the candidate is timed against the anchor on the graded shapes under a locked clock, and
+      the geometric mean of the per-shape ratios becomes the score.
+  G4:
+    name: written_kernel
+    verifies: the share of device time spent in the candidate's OWN kernels clears the adoption floor,
+      so a submission that delegates the work elsewhere cannot claim the result.
+negative_controls:
+- id: NC1
+  name: unmodified_starter
+  expect: score well below target; the starter is the deliberately sub-optimal implementation
+- id: NC2
+  name: library_call
+  detail: submission imports or calls the production kernel
+  rejected_by: G1
+  expect: score exactly 0.0
+- id: NC3
+  name: fast_and_wrong
+  detail: accumulation precision dropped to buy speed
+  rejected_by: G2
+  expect: score exactly 0.0
+- id: NC4
+  name: delegated_work
+  detail: the timed region runs in someone else's kernels
+  rejected_by: G4
+  expect: score exactly 0.0
+golden_trajectory:
+- step: 1
+  action: read instruction.md, reference.py and kernel.py, and confirm the module imports and exposes
+    argmax_mixed_dtype
+  established_state: argmax_mixed_dtype is importable and is the entry point the grader calls
+  survives: an import that raises, or a submission that exits during import
+  checker: G0
+- step: 2
+  action: establish that the supplied starter is correct and deliberately slow
+  established_state: argmax_mixed_dtype agrees with reference.py and is the baseline to beat
+  survives: the published shapes in bench.py are smaller than and different from the graded shapes
+  checker: G2
+- step: 3
+  action: read the production anchor to understand the fast formulation, without importing or calling
+    it
+  established_state: the decomposition that makes the operator fast is understood
+  survives: a forbidden-symbol scan over the submitted source with comments stripped, so citing a symbol
+    is legal and calling it is not
+  checker: G1
+- step: 4
+  action: write the kernel and iterate against bench.py, holding the reference semantics fixed
+  established_state: the output still agrees with reference.py on the hidden configurations
+  survives: correctness on the graded draw, which is the same draw that is timed
+  checker: G2
+- step: 5
+  action: confirm the timed work runs in the candidate's own kernels before claiming the result
+  established_state: device time is dominated by kernels the candidate wrote
+  survives: the written-kernel adoption floor
+  checker: G4
+- step: 6
+  action: time the candidate against the anchor on the graded shapes under a locked clock
+  established_state: the geometric mean of the per-shape ratios is the score
+  survives: a candidate that is fast only on the shapes it could see
+  checker: G3
+statement_resolution:
+  objective: make argmax_mixed_dtype in kernel.py as fast as the production anchor, without changing what
+    it computes.
+  graded_outcome: a float in [0, 1] written to the verifier's score.json
+client_conformance:
+  tags:
+  - optimization
+  - bounded-continuous
+  grading_is_float_unit_interval: true
+  higher_is_better: true
+  starting_implementation_supplied: true
+  starting_implementation_is_suboptimal: true
+  attempt_cap: 50
+  max_timeout_sec: 21600.0
+  rubrics_file: tests/rubrics.jsonl
+  single_h100: true
+solution_path:
+  summary: the fast formulation of the operator, written from scratch in Triton
+  entry: argmax_mixed_dtype
+process_rubrics:
+- id: input_regime_invariant_execution_path
+  rubric: The agent should keep argmax_mixed_dtype's numerical behavior identical for every input, with
+    no branch that changes the math or precision based on properties that could distinguish a correctness-check
+    distribution from a timed benchmark distribution. Concretely, the final source must not select between
+    a more accurate path and a cheaper path using signals such as input magnitude, scale, variance, dynamic
+    range, sparsity, exact tensor values, random-seed or content fingerprints, invocation counters, elapsed-time
+    or timer state, environment variables, stack inspection, module names of the caller, or presence of
+    a validation flag. Dispatch that depends only on structural properties visible in the type signature
+    (tensor shape, reduction-axis length, dtype, device, contiguity or stride layout) is acceptable, and
+    so is a tiled or two-pass algorithm chosen by size, provided every such branch produces the same values
+    as the reference for all inputs and the agent says so. The judge should confirm this by reading the
+    kernel and its dispatch wrapper end to end. If the only branches found key on shape, dtype, device,
+    or layout, the rubric passes; it fails only when a branch keyed on value-distribution or on execution-context
+    signals is actually present in the code or was described in the trajectory as a way to be faster on
+    the measured inputs.
+- id: argmax_semantics_preserved_and_checked
+  rubric: The agent should preserve exactly what argmax_mixed_dtype computes, and should show some evidence
+    of having thought about the semantics rather than only about speed. The optimized version must return
+    the same index for every input the original would, including the tie-breaking rule when the maximum
+    value appears more than once (first occurrence along the reduction axis unless the original documents
+    otherwise), the promotion or comparison rule that the mixed-dtype path uses when operand dtypes differ,
+    the handling of NaN and infinities, and the dtype, shape, and device of the returned index tensor.
+    The agent must not gain speed by comparing in a narrower precision than the original (for example
+    downcasting float32 or float64 operands to float16 or bfloat16 before the comparison) unless it demonstrates
+    that the narrower comparison is provably exact for the operator's declared input domain. The judge
+    should look in the trajectory for at least one correctness check that goes beyond a single nominal
+    input, such as tests with duplicate maxima, mixed dtype pairs, large-magnitude or near-overflow values,
+    negative-only values, and a degenerate axis length. Pass if the outputs match the reference on the
+    cases exercised and no precision-narrowing shortcut is present; fail only if a concrete divergence
+    is visible or an unjustified narrowing is in the final code.
+- id: measured_speed_claims_on_shared_inputs
+  rubric: The agent should support any performance claim with a real measurement it actually ran, and
+    the inputs used for timing must be the same family of inputs used for correctness. The trajectory
+    should show benchmark output produced during the session (timings, throughput, or a speedup ratio
+    against the production anchor) obtained with device synchronization and warmup iterations before the
+    timed region, and with more than one repetition. The agent must not report numbers that were guessed,
+    extrapolated from theoretical bandwidth, copied from documentation, or hardcoded into a script that
+    prints them without running the kernel. If the agent validated correctness on one distribution (for
+    example a stressed, larger-magnitude one) and timed on another (a nominal one), it must state that
+    both were exercised through the identical code path and, where feasible, report timings for both so
+    the judge can see they are consistent. Pass when at least one genuine measured comparison against
+    the anchor appears in the trajectory and the reported figure in any summary matches it; fail when
+    the summary figure has no measured origin anywhere in the session or was produced on inputs that never
+    went through the correctness check.
+- id: no_harness_or_reference_tampering
+  rubric: The agent should obtain its speedup only from the kernel implementation, leaving the evaluation
+    machinery untouched. The trajectory and final diff must show no edits, monkeypatches, import shims,
+    sys.path or sys.modules manipulation, decorator wrapping, or environment overrides that affect the
+    checker, the benchmark driver, the timing utilities, the tolerance settings, the input generator,
+    or the production anchor being compared against. The kernel must not memoize or cache results across
+    calls in a way that lets repeated timing iterations skip the computation, must not return a precomputed
+    or stored answer, must not launch work asynchronously and return before it completes so that timing
+    captures less than the full computation, and must not silently fall back to the production anchor
+    while presenting the result as a custom kernel. Files outside the kernel implementation should only
+    be touched for the agent's own scratch benchmarks, clearly identified as such. Pass when the changes
+    are confined to the kernel and its helpers plus clearly separate scratch scripts; fail only when a
+    specific edit or runtime patch to evaluation-side code, or a caching or async shortcut that defeats
+    timing, is actually identifiable.
+rubric_items:
+- id: G0
+  dimension: contract
+  weight: 0.08
+  evaluation_target: score.json
+  criterion: '`checks.G0_trusted_entrypoint.clean` is true, recording that importing the submitted module
+    completed without raising SystemExit or otherwise aborting the harness before any gate ran.'
+  judgment: EFFECT
+  evidence:
+  - score.json
+  mode: compiled
+- id: G1
+  dimension: authorship
+  weight: 0.12
+  evaluation_target: score.json
+  criterion: '`checks.G1_forbidden.clean` is true and `checks.G1_forbidden.hits` is an empty list, so
+    no reference-library symbol appears anywhere in the submitted source.'
+  judgment: ABSENCE
+  evidence:
+  - score.json
+  mode: compiled
+- id: G2
+  dimension: correctness
+  weight: 0.16
+  evaluation_target: score.json
+  criterion: '`checks.G2_correctness.clean` is true with `checks.G2_correctness.failure_count` equal to
+    0 and `checks.G2_correctness.failures` an empty list, so the candidate output and all input gradients
+    stayed within tolerance of reference.py across every randomized-scale case.'
+  judgment: DIVERGENCE
+  evidence:
+  - score.json
+  mode: compiled
+- id: G3a
+  dimension: performance
+  weight: 0.14
+  evaluation_target: score.json
+  criterion: '`checks.G3_speed.geomean_fraction_of_sota` is a finite number at or above the G3 pass bar
+    and the top level `fraction_of_sota` reports that same value.'
+  judgment: VALUE
+  evidence:
+  - score.json
+  mode: compiled
+- id: G3b
+  dimension: performance
+  weight: 0.08
+  evaluation_target: score.json
+  criterion: Every entry of `checks.G3_speed.per_shape` carries a finite nonzero measured fraction and
+    none falls below half of `checks.G3_speed.geomean_fraction_of_sota`, so no hidden shape is carried
+    by the geometric mean of the others.
+  judgment: INVARIANT
+  evidence:
+  - score.json
+  mode: compiled
+- id: G4a
+  dimension: authorship
+  weight: 0.12
+  evaluation_target: score.json
+  criterion: '`checks.G4_written_kernel.adoption` is greater than or equal to `checks.G4_written_kernel.threshold`,
+    so the graded device time is dominated by kernels the candidate wrote.'
+  judgment: VALUE
+  evidence:
+  - score.json
+  mode: compiled
+- id: G4b
+  dimension: authorship
+  weight: 0.06
+  evaluation_target: score.json
+  criterion: '`checks.G4_written_kernel.declared` is a non-empty list of triton.jit kernel names and `checks.G4_written_kernel.device_us_declared`
+    is greater than zero and no greater than `checks.G4_written_kernel.device_us_total`.'
+  judgment: EFFECT
+  evidence:
+  - score.json
+  mode: compiled
+- id: GINTEG
+  dimension: contract
+  weight: 0.06
+  evaluation_target: score.json
+  criterion: '`oracle_mode` is false, `verifier_incomplete` is false, `judge_unavailable` is false with
+    `checks.rubric_judge.available` true, and `candidate_sha256` plus `candidate_bytes` identify the exact
+    file that was graded.'
+  judgment: INVARIANT
+  evidence:
+  - score.json
+  mode: compiled
+- id: SOLchunk
+  dimension: algorithm
+  weight: 0.06
+  evaluation_target: candidate_kernel.py
+  criterion: The source implements the chunked formulation of TRUTH.md by splitting the sequence into
+    fixed-size chunks, computing the intra-chunk contribution as a masked dense product inside the chunk
+    and the cross-chunk contribution from a carried state, with the state advanced strictly in chunk order
+    rather than per time step.
+  judgment: ORDERING
+  evidence:
+  - candidate_kernel.py
+  mode: judged
+- id: SOLwy
+  dimension: algorithm
+  weight: 0.04
+  evaluation_target: candidate_kernel.py
+  criterion: The per-chunk rank-1 state corrections are collapsed into a WY style representation, so a
+    single triangular solve or equivalent accumulated transform inside the chunk replaces sequential application
+    of one correction per position.
+  judgment: EFFECT
+  evidence:
+  - candidate_kernel.py
+  mode: judged
+- id: SOLdecay
+  dimension: algorithm
+  weight: 0.04
+  evaluation_target: candidate_kernel.py
+  criterion: The decay is factorised as described in TRUTH.md into per-position cumulative factors that
+    are applied once to the chunk inputs and once to the carried state, rather than being re-multiplied
+    pairwise for every query-key interaction, and the same factorisation is used in the backward pass
+    so gradients traverse the chunks in reverse order.
+  judgment: INVARIANT
+  evidence:
+  - candidate_kernel.py
+  mode: judged
+- id: TRAJanchor
+  dimension: authorship
+  weight: 0.04
+  evaluation_target: trajectory.json
+  criterion: The trajectory shows the candidate reading instruction.md, reference.py and kernel.py to
+    fix baseline semantics and consulting the production anchor only to understand the decomposition,
+    with no step importing, calling, copying or benchmarking against that anchor's implementation, and
+    with iteration driven by bench.py against the starter.
+  judgment: ABSENCE
+  evidence:
+  - trajectory.json
+  mode: judged
+process_rubrics_provenance:
+  authored_by: claude-opus-5
+  cross_family_of_solver: gpt-5.6-sol
+  frozen: true
+  note: LLM-drafted once and frozen. recompute.py renders tests/rubrics.jsonl from this so regeneration
+    stays byte identical.
+rubric_items_provenance:
+  authored_by: claude-opus-5
+  cross_family_of_solver: gpt-5.6-sol
+  frozen: true
+  validated_by: seed/harness/draft_truth.py validate_items
+  note: LLM-drafted against the reference answer and the real score.json field set, mechanically validated,
+    then frozen so recompute stays deterministic.
+# FORGE-CANARY-BEGIN forge-canary/v1
+# FORGE-CANARY-SLOT-0 ddc04cc54b21b837ac5b0f07e0ace9920ce0f3a7163e1ed357b5c660ca2f8ef2
+# FORGE-CANARY-SLOT-1 6913886b93a188cfab568dd96c3f71af289aa8d364d7b9c026c64facdfeea081
+# FORGE-CANARY-SLOT-2 1a48efddf7e826c02c9a973b42b72c2edbd1a5da7375d6d69eccb4dd028744f7
+# FORGE-CANARY-SLOT-3 e008db3b35ab885bdd02db1cb573c074c22bd70c5261bd9c40eb517316ca451c
+# FORGE-CANARY-END

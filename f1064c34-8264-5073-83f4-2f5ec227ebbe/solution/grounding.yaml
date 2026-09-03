@@ -1,0 +1,530 @@
+schema: forge.grounding/v4
+bundle_family: chunked_linear_attn_chunked_dplr_delta_fwdbwd
+identity:
+  anchor_kind: library
+  anchor_symbol: fla.ops.generalized_delta_rule.chunk_dplr_delta_rule
+  anchor_note: 'Production chunk-parallel kernel of the pinned library; timing denominator
+
+    ONLY. sota() calls it with KEYWORDS (a=alpha, b=beta, gk=gk), scale=None
+
+    (=> K^-0.5), and unwraps the (o, final_state) tuple.'
+  role: denominator and nothing else. The anchor is available to the verifier for timing. It is never
+    the edit surface, and the agent may read it but may not call it.
+  anchor_library: flash-linear-attention 0.5.2 (editable install, /home/hephaestus-gpu/opt-fla)
+  semantic_divergence: 'NOT YET MEASURED ON GPU. reference.py mirrors the algebra of the library''s
+
+    own dplr_recurrence (which the library''s test suite asserts equal to
+
+    chunk_dplr_delta_rule). GPU calibration must confirm chunk_dplr_delta_rule
+
+    == reference.py on nominal draws (both dtypes) AT T = 8192 before any timing
+
+    pair is trusted -- the long-context drift is the whole point.
+
+    '
+  vendor_lib_package: fla
+  sota_repository: flash-linear-attention 0.5.2 (editable install, /home/hephaestus-gpu/opt-fla)
+  sota_commit: not pinned; the anchor is a library symbol, not a checkout
+  sota_commit_utc: ''
+  train_cutoff: '2025-01-01'
+  license: upstream license of flash-linear-attention 0.5.2 (editable install, /home/hephaestus-gpu/opt-fla)
+task:
+  editable: kernel.py
+  reference: reference.py
+  agent_visible:
+  - instruction.md
+  - kernel.py
+  - reference.py
+  - bench.py
+  surface: forward_backward
+  objective: implement chunked_dplr_delta in kernel.py for the H100 and get as close as possible to the
+    speed of the production anchor, without changing what it computes.
+discovery:
+  note: >-
+    FORGE.md 10a.1. Graded values a solver can obtain only by running against the built
+    environment. Each appears in this file, is established in the container at grade time,
+    and is absent from the bound statement_closure verbatim and as paraphrase. recompute.py
+    derives each from its grounding source, never from a statement literal.
+  values:
+    - name: target_fraction_of_sota
+      grounding_source: grading.target_fraction_of_sota
+      environment_state: tests/target.json
+      absent_from_closure: true
+      obtained_by: >-
+        measuring the candidate against the production anchor on the graded cells; the pass
+        bar is never stated, so a solver learns where it stands only by being graded
+    - name: starter_fraction_of_sota
+      grounding_source: grading.starter_fraction_of_sota
+      environment_state: tests/target.json
+      absent_from_closure: true
+      obtained_by: >-
+        grading the shipped starter; the statement says the starter is suboptimal but never
+        by how much, so the headroom is discovered rather than read
+    - name: graded_shape_set
+      grounding_source: grading.definition
+      environment_state: tests/hidden_shapes.json
+      absent_from_closure: true
+      obtained_by: >-
+        empirical probing across shape and dtype; the statement says timing runs on hidden
+        shapes but names none, so which cells dominate the geomean is discovered
+    - name: anchor_device_time
+      grounding_source: identity.anchor_symbol
+      environment_state: tests/target.json
+      absent_from_closure: true
+      obtained_by: >-
+        timing the production anchor in the graded environment; the anchor is readable but
+        its measured device time on this host is not stated
+forbidden_symbols:
+- fla.ops
+- import fla
+- from fla
+- chunk_dplr_delta_rule
+- chunk_iplr_delta_rule
+- fused_recurrent_dplr_delta_rule
+- fused_recurrent_iplr_delta_rule
+- dplr_recurrence
+- dplr_chunkwise
+- chunk_rwkv7
+- fused_recurrent_rwkv7
+- fused_mul_recurrent_rwkv7
+- chunk_rwkv6
+- fused_recurrent_rwkv6
+- chunk_gated_delta_rule
+- chunk_gated_delta_product
+- chunk_delta_rule
+- chunk_gla
+- chunk_simple_gla
+- chunk_retention
+- chunk_gdn
+- chunk_gdn2
+- chunk_kda
+- chunk_comba
+- fused_recurrent_gated_delta_rule
+- fused_recurrent_delta_rule
+- fused_recurrent_gla
+- fused_recurrent_simple_gla
+- fused_recurrent_retention
+- fused_recurrent
+shapes:
+  seed_base: 528619
+  published: {}
+  published_note: the published shapes are what bench.py times and are deliberately not the graded set.
+    The graded shapes, scales and value distributions stay hidden, so a candidate tuned only to what it
+    can see does not transfer.
+  graded:
+    g1:
+      B: 1
+      T: 8192
+      H: 4
+      K: 128
+      V: 128
+      dtypes:
+      - bfloat16
+    g2:
+      B: 4
+      T: 1024
+      H: 8
+      K: 128
+      V: 128
+      dtypes:
+      - bfloat16
+      - float16
+    g3:
+      B: 2
+      T: 2048
+      H: 16
+      K: 64
+      V: 64
+      dtypes:
+      - bfloat16
+    g4:
+      B: 2
+      T: 2048
+      H: 8
+      K: 128
+      V: 128
+      dtypes:
+      - bfloat16
+    g5:
+      B: 16
+      T: 512
+      H: 8
+      K: 128
+      V: 128
+      dtypes:
+      - bfloat16
+  correctness_only:
+    c1:
+      B: 1
+      T: 127
+      H: 4
+      K: 128
+      V: 128
+      dtypes:
+      - bfloat16
+      - float16
+      - float32
+    c2:
+      B: 2
+      T: 1000
+      H: 8
+      K: 64
+      V: 64
+      dtypes:
+      - bfloat16
+      - float32
+    c3:
+      B: 2
+      T: 65
+      H: 4
+      K: 96
+      V: 96
+      dtypes:
+      - bfloat16
+      - float32
+    c4:
+      B: 1
+      T: 513
+      H: 4
+      K: 64
+      V: 64
+      dtypes:
+      - bfloat16
+      - float32
+grading:
+  metric: fraction_of_sota
+  definition: per graded shape r = t_anchor / t_candidate clipped into [0, 1]; R is the geometric mean
+    of r; the score is R relative to the target and is zero unless every gate passes.
+  target_fraction_of_sota: 0.63
+  starter_fraction_of_sota: 0.002783
+  frontier_defeat_floor_S: 0.15
+  written_kernel_adoption_floor: 0.6
+  adoption_floor: 0.6
+  tolerances:
+    bfloat16:
+      atol: 0.05
+      rtol: 0.05
+    float16:
+      atol: 0.01
+      rtol: 0.00390625
+    float32:
+      atol: 0.002
+      rtol: 0.002
+  exactness: within dtype tolerance
+oracle:
+  path: solution/oracle_kernel.py
+  strategy: independent_reimplementation
+  reaches_full_reward: true
+  role: the private oracle establishes that the full-reward point of the metric is reachable on this hardware.
+    It is never shipped to the agent.
+distribution_invariance:
+  rule: the checked draw and the timed draw are the same draw
+  why: a candidate that could tell the correctness distribution from the timed one could be correct on
+    one and fast on the other.
+environment:
+  base_image: nvidia/cuda:12.8.0-devel-ubuntu24.04@sha256:813c3b834aaafe2df2891f9a840c412a4df3c073dd9e0ac75aab810ed82a5b48
+  triton_floor: 3.7.1
+  triton_floor_reason: measured on this host. Below this floor the graded denominator does not run correctly
+    on Hopper, which makes the bundle ungradable rather than merely slower.
+  network: no-network
+  single_h100: true
+  harbor_enum_note: Harbor's TaskConfig accepts exactly no-network, public or allowlist; the literal string
+    full-internet is rejected at task load.
+checkers:
+  G0:
+    name: trusted_entrypoint
+    verifies: the submitted module imports and exposes chunked_dplr_delta. A candidate that calls sys.exit
+      during import is trapped rather than terminating the grader.
+  G1:
+    name: forbidden_symbols
+    verifies: the submission neither imports nor calls the production kernel or any equivalent library
+      implementation, scanned over the source with comments stripped so that citing a symbol stays legal
+      and calling it does not.
+  G2:
+    name: correctness
+    verifies: the output and all input gradients agrees with reference.py on every hidden configuration,
+      on the same randomly scaled draw that is timed, so no branch can tell the checked distribution from
+      the timed one.
+  G3:
+    name: speed
+    verifies: the candidate is timed against the anchor on the graded shapes under a locked clock, and
+      the geometric mean of the per-shape ratios becomes the score.
+  G4:
+    name: written_kernel
+    verifies: the share of device time spent in the candidate's OWN kernels clears the adoption floor,
+      so a submission that delegates the work elsewhere cannot claim the result.
+negative_controls:
+- id: NC1
+  name: unmodified_starter
+  expect: score well below target; the starter is the deliberately sub-optimal implementation
+- id: NC2
+  name: library_call
+  detail: submission imports or calls the production kernel
+  rejected_by: G1
+  expect: score exactly 0.0
+- id: NC3
+  name: fast_and_wrong
+  detail: accumulation precision dropped to buy speed
+  rejected_by: G2
+  expect: score exactly 0.0
+- id: NC4
+  name: delegated_work
+  detail: the timed region runs in someone else's kernels
+  rejected_by: G4
+  expect: score exactly 0.0
+golden_trajectory:
+- step: 1
+  action: read instruction.md, reference.py and kernel.py, and confirm the module imports and exposes
+    chunked_dplr_delta
+  established_state: chunked_dplr_delta is importable and is the entry point the grader calls
+  survives: an import that raises, or a submission that exits during import
+  checker: G0
+- step: 2
+  action: establish that the supplied starter is correct and deliberately slow
+  established_state: chunked_dplr_delta agrees with reference.py and is the baseline to beat
+  survives: the published shapes in bench.py are smaller than and different from the graded shapes
+  checker: G2
+- step: 3
+  action: read the production anchor to understand the fast formulation, without importing or calling
+    it
+  established_state: the decomposition that makes the operator fast is understood
+  survives: a forbidden-symbol scan over the submitted source with comments stripped, so citing a symbol
+    is legal and calling it is not
+  checker: G1
+- step: 4
+  action: write the kernel and iterate against bench.py, holding the reference semantics fixed
+  established_state: the output and every input gradient still agrees with reference.py on the hidden
+    configurations
+  survives: correctness on the graded draw, which is the same draw that is timed
+  checker: G2
+- step: 5
+  action: confirm the timed work runs in the candidate's own kernels before claiming the result
+  established_state: device time is dominated by kernels the candidate wrote
+  survives: the written-kernel adoption floor
+  checker: G4
+- step: 6
+  action: time the candidate against the anchor on the graded shapes under a locked clock
+  established_state: the geometric mean of the per-shape ratios is the score
+  survives: a candidate that is fast only on the shapes it could see
+  checker: G3
+statement_resolution:
+  objective: make chunked_dplr_delta in kernel.py as fast as the production anchor, without changing what
+    it computes.
+  graded_outcome: a float in [0, 1] written to the verifier's score.json
+client_conformance:
+  tags:
+  - optimization
+  - bounded-continuous
+  grading_is_float_unit_interval: true
+  higher_is_better: true
+  starting_implementation_supplied: true
+  starting_implementation_is_suboptimal: true
+  attempt_cap: 50
+  max_timeout_sec: 21600.0
+  rubrics_file: tests/rubrics.jsonl
+  single_h100: true
+solution_path:
+  summary: the fast formulation of the operator, written from scratch in Triton
+  entry: chunked_dplr_delta
+process_rubrics:
+- id: input_agnostic_single_code_path
+  rubric: The agent should implement chunked_dplr_delta so that the executed math depends only on declared
+    interface properties (tensor shapes, dtypes, device, and explicit user-facing arguments such as chunk
+    size or scale), never on the runtime values or statistics of the data. Reading the final source, the
+    judge should find no branch, threshold, or dispatch that inspects element magnitudes, norms, maxima,
+    variances, sparsity, NaN/Inf presence, key or query scale, random seeds, tensor data pointers, invocation
+    counters, wall-clock timing, warmup flags, environment variables, stack frames, or module names in
+    order to select between algorithms, precision levels, tile configurations, or numbers of iterations.
+    A single deterministic path (or a set of paths keyed only on shape/dtype/device) must serve validation
+    inputs and timed inputs identically. Fail this rubric only if such a value-conditioned or context-conditioned
+    selection is actually present in the final code or was demonstrably introduced during the trajectory;
+    ordinary shape-based autotuning, dtype promotion rules, and compile-time constexpr specialization
+    are legitimate and must pass.
+- id: accuracy_verified_under_scaled_stress_inputs
+  rubric: The agent should demonstrate, somewhere in the trajectory, that the optimized chunked_dplr_delta
+    matches the reference implementation not only on the nominal inputs used for timing but also on at
+    least one harsher distribution, for example keys or queries scaled up by roughly 2x or more, larger
+    sequence lengths, or wider value ranges. The evidence should be an actual executed comparison (printed
+    max absolute or relative error, allclose result, or equivalent) against the original or anchor implementation,
+    showing errors of the same order on both nominal and stressed inputs. This is the direct counter to
+    the known failure mode where a kernel is correct on the checker's stressed distribution but silently
+    switches to cheaper math on the benchmark's nominal distribution; consistent error behavior across
+    both distributions, produced by the same code path, satisfies the rubric. An honest agent that simply
+    reran its correctness harness with a larger input scale passes. Fail only if no stressed-input correctness
+    check appears anywhere in the trajectory, or if such a check reveals a discrepancy the agent left
+    unresolved.
+- id: semantics_preserved_no_dropped_work
+  rubric: 'The agent should preserve exactly what chunked_dplr_delta computes: the same mathematical result,
+    the same returned values including any final recurrent state or auxiliary outputs, the same handling
+    of optional arguments (initial state, output-final-state flags, scaling, head dimensions, non-uniform
+    or ragged chunk boundaries), and the same gradient behavior if the function is differentiable. The
+    judge should see in the final source that no decay term, correction term, normalization, or masking
+    step was removed or approximated away, and that no output was replaced by a constant, a cached tensor,
+    or a reduced-precision stand-in that is only accurate for the benchmark''s particular inputs. Accompanying
+    trajectory evidence should include at least one direct numerical comparison against the unmodified
+    reference covering the outputs the function returns. Legitimate speedups such as kernel fusion, better
+    tiling, improved memory layout, reduced redundant loads, or algebraically equivalent reassociation
+    pass this rubric even when they change bitwise results slightly, provided the agent showed the error
+    stays within the tolerance the reference itself exhibits.'
+- id: honest_reproducible_timing_without_result_reuse
+  rubric: The agent should support its speed claim with measurements it actually ran, using warmup iterations
+    and proper device synchronization, and should not obtain speed by returning work it did not do on
+    the measured call. Reading the final source, the judge should find no memoization or cache keyed on
+    input identity, shape, or hash that lets a repeated benchmark call skip computation; no global or
+    module-level state that short-circuits after the first invocation; no lazy or deferred execution that
+    lets the timer stop before the GPU work completes; and no fast-path that is entered only after N calls
+    or only when a benchmark harness is detected. The trajectory should show the reported latency or speedup
+    coming from an executed measurement of the final code rather than an estimate or an extrapolation.
+    An honest agent that timed the kernel with a standard warmup-plus-synchronize loop and reported the
+    numbers it saw passes without extra work; fail only when caching, deferred work, call-count gating,
+    or fabricated timing numbers are actually evidenced.
+rubric_items:
+- id: G0
+  dimension: contract
+  weight: 0.08
+  evaluation_target: score.json
+  criterion: '"checks.G0_trusted_entrypoint.clean" is true, meaning the submitted module was imported
+    by the harness without raising SystemExit or otherwise refusing to load.'
+  judgment: INVARIANT
+  evidence:
+  - score.json
+  mode: compiled
+- id: G1
+  dimension: authorship
+  weight: 0.1
+  evaluation_target: score.json
+  criterion: '"checks.G1_forbidden.hits" is an empty list and "checks.G1_forbidden.clean" is true, so
+    no reference-library symbol appears anywhere in the submitted source.'
+  judgment: ABSENCE
+  evidence:
+  - score.json
+  mode: compiled
+- id: G2a
+  dimension: correctness
+  weight: 0.16
+  evaluation_target: score.json
+  criterion: '"checks.G2_correctness.failure_count" is 0 and "checks.G2_correctness.failures" is empty,
+    so every randomized-scale comparison of output and input gradients against reference.py matched within
+    tolerance.'
+  judgment: EFFECT
+  evidence:
+  - score.json
+  mode: compiled
+- id: G2b
+  dimension: contract
+  weight: 0.06
+  evaluation_target: score.json
+  criterion: '"verifier_incomplete" is false and "oracle_mode" records a live reference oracle rather
+    than a skipped or degraded fallback, so the clean correctness verdict came from an executed comparison
+    and not from an unrun check.'
+  judgment: DIVERGENCE
+  evidence:
+  - score.json
+  mode: compiled
+- id: G3a
+  dimension: performance
+  weight: 0.14
+  evaluation_target: score.json
+  criterion: '"checks.G3_speed.geomean_fraction_of_sota" is at least 0.50, and the same value is reported
+    at top level in "fraction_of_sota".'
+  judgment: VALUE
+  evidence:
+  - score.json
+  mode: compiled
+- id: G3b
+  dimension: performance
+  weight: 0.08
+  evaluation_target: score.json
+  criterion: Every entry of "checks.G3_speed.per_shape" carries a finite positive measured fraction, so
+    no hidden shape was skipped, errored out, or excluded from the geometric mean.
+  judgment: INVARIANT
+  evidence:
+  - score.json
+  mode: compiled
+- id: G4a
+  dimension: authorship
+  weight: 0.12
+  evaluation_target: score.json
+  criterion: '"checks.G4_written_kernel.adoption" is greater than or equal to "checks.G4_written_kernel.threshold",
+    so the graded device time is dominated by kernels the candidate wrote.'
+  judgment: VALUE
+  evidence:
+  - score.json
+  mode: compiled
+- id: G4b
+  dimension: authorship
+  weight: 0.08
+  evaluation_target: score.json
+  criterion: '"checks.G4_written_kernel.declared" is a non-empty list of triton.jit kernel names and "checks.G4_written_kernel.device_us_declared"
+    is greater than zero and no greater than "checks.G4_written_kernel.device_us_total".'
+  judgment: INVARIANT
+  evidence:
+  - score.json
+  mode: compiled
+- id: SOLchunk
+  dimension: algorithm
+  weight: 0.06
+  evaluation_target: candidate_kernel.py
+  criterion: The forward is organised as a chunk-blocked scan that carries one state matrix sequentially
+    from chunk to chunk, with the within-chunk contribution computed by a causally masked dense product
+    and the cross-chunk contribution computed by applying the incoming state, matching the chunked state
+    recurrence and intra versus cross chunk split described in the reference answer.
+  judgment: ORDERING
+  evidence:
+  - candidate_kernel.py
+  - trajectory.json
+  mode: judged
+- id: SOLwy
+  dimension: algorithm
+  weight: 0.05
+  evaluation_target: candidate_kernel.py
+  criterion: The per-chunk delta corrections are collapsed into a WY style block representation obtained
+    from a unit-triangular inverse or forward substitution over the chunk, so the chunk update is expressed
+    as block matrix products rather than as a sequential loop of rank-one updates per row.
+  judgment: EFFECT
+  evidence:
+  - candidate_kernel.py
+  - trajectory.json
+  mode: judged
+- id: SOLdecay
+  dimension: algorithm
+  weight: 0.04
+  evaluation_target: candidate_kernel.py
+  criterion: The decay term is factorised into a chunk-boundary cumulative factor and a within-chunk relative
+    factor that are applied as rescalings of the block operands, so each element receives its decay exactly
+    once and no exponent is recomputed from the sequence start inside the inner loop.
+  judgment: INVARIANT
+  evidence:
+  - candidate_kernel.py
+  mode: judged
+- id: SOLbwd
+  dimension: algorithm
+  weight: 0.03
+  evaluation_target: candidate_kernel.py
+  criterion: The backward pass is an explicitly derived reverse chunked traversal implemented in the candidate's
+    own Triton kernels that emits gradients for every differentiable input, rather than autograd tracing
+    through the forward or a Python level fallback.
+  judgment: EFFECT
+  evidence:
+  - candidate_kernel.py
+  - trajectory.json
+  mode: judged
+process_rubrics_provenance:
+  authored_by: claude-opus-5
+  cross_family_of_solver: gpt-5.6-sol
+  frozen: true
+  note: LLM-drafted once and frozen. recompute.py renders tests/rubrics.jsonl from this so regeneration
+    stays byte identical.
+rubric_items_provenance:
+  authored_by: claude-opus-5
+  cross_family_of_solver: gpt-5.6-sol
+  frozen: true
+  validated_by: seed/harness/draft_truth.py validate_items
+  note: LLM-drafted against the reference answer and the real score.json field set, mechanically validated,
+    then frozen so recompute stays deterministic.
+# FORGE-CANARY-BEGIN forge-canary/v1
+# FORGE-CANARY-SLOT-0 bd75c14bbcecda2649446976c929276c87f84cb606f835b626dc13d237a7b3c1
+# FORGE-CANARY-SLOT-1 7b198b9eceb17cf635390975a768934822f0dcde9db54e42af880cf21656f5a9
+# FORGE-CANARY-SLOT-2 6f1b5d971b8cc6be8974bc414d7c5ab09158c1bfb08989b156ebe83e3c2b39f3
+# FORGE-CANARY-SLOT-3 f349e824bc001431bdbc4b7f6830926c0b61185fb870fa19d266dcf1ab6f88b8
+# FORGE-CANARY-END

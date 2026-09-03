@@ -1,0 +1,146 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G0_trusted_entrypoint.clean\" is true, showing the submitted module was imported by the harness without raising SystemExit or otherwise refusing to load.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G1_forbidden.clean\" is true and \"checks.G1_forbidden.hits\" is an empty list, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G2_correctness.clean\" is true with \"checks.G2_correctness.failure_count\" equal to 0 and \"checks.G2_correctness.failures\" empty, so the forward output and every input gradient matched reference.py across the randomized-scale trials.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G3_speed.per_shape\" contains a timed entry for every hidden shape the harness benchmarked, with no entry missing, null, or zero, so the reported geometric mean is taken over the full hidden shape set rather than a surviving subset.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G3_speed.geomean_fraction_of_sota\" meets or exceeds the speed gate and agrees with the top-level \"fraction_of_sota\", so the candidate reaches the required fraction of the production kernel over the hidden shapes.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time is dominated by kernels the candidate wrote.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G4_written_kernel.declared\" is a non-empty list of the candidate's own triton.jit kernel names and \"checks.G4_written_kernel.device_us_declared\" is greater than zero and no larger than \"checks.G4_written_kernel.device_us_total\", so the adoption ratio is backed by real attributed device microseconds.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "VERIFY",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"verifier_incomplete\" is false and \"outcome\" is a decided verdict accompanied by a non-empty \"reason\", \"candidate_sha256\", and \"candidate_bytes\", so the recorded result identifies one fully graded artifact rather than an aborted or partial run.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.07,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source implements the operator as a chunked state recurrence in which each chunk computes a masked intra-chunk term against the tokens inside the chunk plus a cross-chunk contribution read from a carried state matrix that is updated once per chunk, rather than stepping token by token as the starter does.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.06,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source factorises the per-position decay into a cumulative within-chunk term and a whole-chunk term, and collapses the sequential rank-1 corrections of a chunk into a single WY style transform solved from one small triangular system instead of applying them one at a time.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLbwd",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The input gradients are produced by an explicitly derived backward pass running in the candidate's own kernels over a reverse chunk recurrence, not by letting autograd differentiate a Python-level per-token loop or any eager fallback path.",
+      "judgment": "DIVERGENCE",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 3ba11a0060fdbdbd191746ee52a4bef4e373ae78ef266af3192272c554d43c70
+FORGE-CANARY-SLOT-1 dad2583c5cdffe95684adf9ca848bd9c00fe687400e563d18eebf627d6a77325
+FORGE-CANARY-SLOT-2 2b174defda600ed37f94172c8a2ea1a97e1059c6b89f84081fbd0587c9593690
+FORGE-CANARY-SLOT-3 799409199f4e0d6101cc6bd0efc16a073d0d4b5a9e4ac512184e3ff35e067310
+FORGE-CANARY-END

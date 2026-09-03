@@ -1,0 +1,131 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G0_trusted_entrypoint.clean\" is true, meaning the submitted module was imported by the harness and completed import without raising SystemExit or otherwise refusing to load.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G1_forbidden.clean\" is true and \"checks.G1_forbidden.hits\" is an empty list, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G3_speed.geomean_fraction_of_sota\" is a positive number at or above the recorded G3 pass threshold and agrees with the top-level \"fraction_of_sota\", so the graded speed is a measured win and not an unmeasured or defaulted value.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G3_speed.per_shape\" carries one timed entry for each published hidden shape and no entry is missing, null, or zero, so the geometric mean in \"checks.G3_speed.geomean_fraction_of_sota\" is not carried by a subset of shapes while others silently failed to time.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.12,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time is dominated by kernels the candidate wrote rather than by library calls.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G4_written_kernel.declared\" is a non-empty list and \"checks.G4_written_kernel.device_us_declared\" is greater than zero and no greater than \"checks.G4_written_kernel.device_us_total\", so declared triton.jit kernels actually executed and accounted for real device time.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G5meta",
+      "dimension": "integrity",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "\"verifier_incomplete\" is false and \"judge_unavailable\" is false and \"oracle_mode\" is populated, with \"candidate_sha256\" and \"candidate_bytes\" both present, so every gate verdict above was produced by a complete run over an identified artifact.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.06,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source implements the chunked state recurrence described in TRUTH.md, carrying one state across chunk boundaries and splitting each chunk's work into a masked intra-chunk part and a single cross-chunk contribution from the entering state, rather than looping the reference recurrence one timestep at a time.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source collapses the per-step rank-1 delta corrections within a chunk into a WY-style representation built from a triangular solve or forward substitution over the chunk, so the chunk's transition is applied as dense matrix work instead of as a sequence of independent rank-1 updates.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source factors the per-channel decay into cumulative log-decay prefixes evaluated once per chunk and applies ratios of those prefixes to relate any two positions, so no kernel recomputes a running decay product step by step inside the chunk.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 6a93dd99f533b5c6800885bdc91abae3577c184ec6ac7d5d1538ba393cb1586b
+FORGE-CANARY-SLOT-1 51e9e8fc2683454d7f16402bbe50e1981b07ea084445591440ab51fa1846cdb2
+FORGE-CANARY-SLOT-2 8f204779bb9fc59e65b62fc9125a4a4eeec5d12fbc9215ea326b216233640f7c
+FORGE-CANARY-SLOT-3 cb4d5b3ad630abb8290b0578178e274afdcff3fc29cb5a83ec2322d6cf4fb6df
+FORGE-CANARY-END

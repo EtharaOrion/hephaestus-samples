@@ -1,0 +1,131 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G0_trusted_entrypoint.clean\" is true, meaning the submitted module was imported by the harness without raising SystemExit or otherwise aborting the trusted entrypoint.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "The array \"checks.G1_forbidden.hits\" is empty and \"checks.G1_forbidden.clean\" is true, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G3_speed.geomean_fraction_of_sota\" is at least 1.0 and agrees with the top-level \"fraction_of_sota\" reported for the run.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "No entry in \"checks.G3_speed.per_shape\" falls below half of \"checks.G3_speed.geomean_fraction_of_sota\", so the speed result is uniform across hidden shapes rather than carried by a subset of them.",
+      "judgment": "DIVERGENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so graded device time is dominated by kernels the candidate declared and wrote.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The list \"checks.G4_written_kernel.declared\" is non-empty and \"checks.G4_written_kernel.device_us_declared\" is greater than zero and not greater than \"checks.G4_written_kernel.device_us_total\", so the adoption figure is backed by real declared-kernel device time.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source implements the reference answer's chunked state recurrence, partitioning the sequence into fixed-size chunks and carrying a running key-value state across chunk boundaries, with the per-token output formed as an intra-chunk causally masked term plus a cross-chunk term read from the carried state.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Within a chunk the source collapses the per-position rank-one delta corrections into a WY-style representation built from the inverse of a lower triangular in-chunk matrix, and contains no sequential per-position loop applying those rank-one updates one at a time.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source factorises the decay term as a ratio of cumulative products so that each position's decay is applied as a scaling of queries, keys and the carried state, matching the reference answer's decay factorisation rather than recomputing pairwise decay products.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "PROCbaseline",
+      "dimension": "process",
+      "weight": 0.03,
+      "evaluation_target": "trajectory.json",
+      "criterion": "The trajectory shows the supplied starter being established as a correct but deliberately slow baseline and the production anchor being read for its decomposition, both before any candidate kernel is benchmarked, and shows the anchor was never imported or called.",
+      "judgment": "ORDERING",
+      "evidence": [
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 2020c1c5f3297c1c30599fd51a06c953764929922a2bd474bf0a5e627cbf8ca8
+FORGE-CANARY-SLOT-1 bfc12e636519eb56dfe1afba9612b77ddb42bdf99604dfc205fd53ba8b20a812
+FORGE-CANARY-SLOT-2 d08683cffec923750b75f3b4e1f88b74cce99be4bc0907474dee958915faf3c2
+FORGE-CANARY-SLOT-3 3fa9e5ac9e26368e5572621167a3d49453ab0411713300a41fdc249337c296ee
+FORGE-CANARY-END

@@ -1,0 +1,131 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G0_trusted_entrypoint.clean\" is true, recording that importing the submitted module raised no SystemExit and the graded entrypoint was reached without the harness aborting.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G1_forbidden.hits\" is an empty list and \"checks.G1_forbidden.clean\" is true, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.11,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G3_speed.geomean_fraction_of_sota\" is at least 0.80, the speed bar the graded run must clear against the production kernel over the hidden shapes.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "Every entry of \"checks.G3_speed.per_shape\" carries a finite fraction strictly greater than zero and the top-level \"fraction_of_sota\" equals \"checks.G3_speed.geomean_fraction_of_sota\", so the headline speed number is backed by a complete per-shape record rather than a partial sweep.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.13,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time is dominated by kernels the candidate wrote.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G4_written_kernel.declared\" is a non-empty list and \"checks.G4_written_kernel.device_us_declared\" is no greater than \"checks.G4_written_kernel.device_us_total\" and their ratio reproduces \"checks.G4_written_kernel.adoption\", so the adoption figure is derived from actually declared triton.jit kernels.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "VERcomplete",
+      "dimension": "contract",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "\"verifier_incomplete\" is false, \"judge_unavailable\" is false with \"checks.rubric_judge.available\" true, and \"oracle_mode\" records the real private oracle rather than a degraded or stubbed mode, so \"outcome\" is a full verdict and not a partial one.",
+      "judgment": "DIVERGENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted kernel computes the operator by a chunked state recurrence in which a per-head state matrix is carried across fixed-size chunks and each chunk's output is the sum of a masked intra-chunk term and a cross-chunk term read from the carried state, matching the decomposition described in the reference answer.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted kernel contains no sequential per-row loop applying the rank-1 corrections one row at a time within a chunk, having instead collapsed the chunk's corrections into a WY-style block transform solved once per chunk as the reference answer prescribes.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Decay is applied through a factorisation of cumulative log-decay per position so that intra-chunk decay enters as a ratio-based outer-product mask and cross-chunk decay enters as a single per-chunk scale, never by materialising pairwise decay powers or recomputing prefixes per position.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 50b60f1e1b17fe30bb86ac7fb228cf7a7de098cb78a5cb1e72b144c1f74837c5
+FORGE-CANARY-SLOT-1 f3b6b52316a6518c57cfc9315823fc4a1c8a4ff8745408ea559892f394cf082c
+FORGE-CANARY-SLOT-2 fd2b75436b6b0b26fc14d2399d3961191945b62bf6fd4f37ff72f83f2bff7ea5
+FORGE-CANARY-SLOT-3 5f0f41d1ebd670dff3088a7c195b8a4eb6596de3385c4a1722d33e4587b15af1
+FORGE-CANARY-END

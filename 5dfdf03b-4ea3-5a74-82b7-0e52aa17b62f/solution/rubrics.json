@@ -1,0 +1,156 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"checks.G0_trusted_entrypoint.clean\" as true, meaning the submitted module was imported by the harness without raising SystemExit or otherwise refusing to load.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"checks.G1_forbidden.clean\" as true and \"checks.G1_forbidden.hits\" as an empty list, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"checks.G2_correctness.clean\" as true with \"checks.G2_correctness.failure_count\" equal to 0 and \"checks.G2_correctness.failures\" empty, so both the output and every input gradient matched reference.py under the randomized-scale comparison.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"checks.G3_speed.geomean_fraction_of_sota\" as a finite positive number that reaches the speed gate, and the top level \"fraction_of_sota\" agrees with that same recorded geometric mean.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"checks.G3_speed.per_shape\" as a non-empty collection carrying one measured fraction entry per hidden benchmark shape with no null or missing measurement, so the geometric mean is backed by complete per-shape timings rather than a partial sweep.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.12,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"checks.G4_written_kernel.adoption\" as greater than or equal to \"checks.G4_written_kernel.threshold\", so the measured device time is dominated by kernels the candidate wrote.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"checks.G4_written_kernel.declared\" as a non-empty list of triton.jit kernel names and satisfies 0 < \"checks.G4_written_kernel.device_us_declared\" <= \"checks.G4_written_kernel.device_us_total\", so the adoption ratio is computed from real declared-kernel device microseconds.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2b",
+      "dimension": "contract",
+      "weight": 0.05,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"verifier_incomplete\" as false with \"oracle_mode\" set to the full private-oracle mode, so no gate verdict was produced under a degraded or skipped verification path.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4c",
+      "dimension": "contract",
+      "weight": 0.03,
+      "evaluation_target": "score.json",
+      "criterion": "The graded run records \"judge_unavailable\" as false and \"checks.rubric_judge.available\" as true with a numeric \"checks.rubric_judge.pass_share\", so the judged solution obligations were actually adjudicated instead of silently defaulting.",
+      "judgment": "DIVERGENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.07,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source implements the reference answer's chunked state recurrence, carrying a running state across chunk boundaries while computing the within-chunk contribution as a masked dense block product, rather than iterating the recurrence one timestep at a time.",
+      "judgment": "VALUE",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.06,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source collapses the per-timestep rank-one corrections inside each chunk into a WY-style representation built from a triangular solve, and applies the decay as a factorised cumulative term so that decay ratios appear as elementwise scalings of the block products instead of a sequential rescale.",
+      "judgment": "VALUE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLbackward",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted backward mirrors the same chunked intra-plus-cross decomposition in reverse, recomputing or reusing the chunk-boundary states to produce gradients for every input in the candidate's own kernels, rather than relying on autograd tracing through a per-timestep Python loop.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 de3338688d6986c00757312e50fa2a89281204810a3d37ec23107c88f14465e0
+FORGE-CANARY-SLOT-1 372ff620111834e8dac9c9d39937f65f2dad23ef677ee5e6eb30c1c9485a6b1a
+FORGE-CANARY-SLOT-2 3efd1b54554e6b7636893e2e72469eb8719b5697473a877c24c17aa30d6993d1
+FORGE-CANARY-SLOT-3 bae59c1d9ba44461565342f496a7573d1dfa27bdd303c745b47f816275797915
+FORGE-CANARY-END

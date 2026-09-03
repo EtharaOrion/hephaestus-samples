@@ -1,0 +1,157 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "The verifier recorded \"checks.G0_trusted_entrypoint.clean\": true, meaning importing the submitted module completed without raising SystemExit or otherwise tripping the trusted entrypoint guard.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "The array at \"checks.G1_forbidden.hits\" is empty and \"checks.G1_forbidden.clean\" is true, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "The verifier recorded \"checks.G2_correctness.clean\": true with \"checks.G2_correctness.failure_count\": 0 and an empty \"checks.G2_correctness.failures\", so output and input gradients matched reference.py on every randomized-scale trial.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "The value at \"checks.G3_speed.geomean_fraction_of_sota\" is at least 0.80, meaning the candidate reaches at least eighty percent of the production kernel's speed as a geometric mean over the graded hidden shapes.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "No individual entry recorded in \"checks.G3_speed.per_shape\" falls below 0.60 of the production kernel, so the geometric mean in \"checks.G3_speed.geomean_fraction_of_sota\" is not being carried by a subset of favourable shapes.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.12,
+      "evaluation_target": "score.json",
+      "criterion": "The value at \"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so graded device time is dominated by kernels the candidate wrote.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The list at \"checks.G4_written_kernel.declared\" is non-empty and \"checks.G4_written_kernel.device_us_declared\" divided by \"checks.G4_written_kernel.device_us_total\" agrees with the reported \"checks.G4_written_kernel.adoption\" to within one percent, so adoption is backed by named triton.jit kernels rather than satisfied vacuously.",
+      "judgment": "DIVERGENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G0v",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The run is a complete grading run in which \"verifier_incomplete\" is false, \"judge_unavailable\" is false, \"oracle_mode\" names the oracle actually used, and \"outcome\" is consistent with every recorded gate clean flag rather than with a skipped or degraded gate.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.06,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source carries the recurrent state at chunk granularity as TRUTH.md prescribes, computing the intra-chunk contribution with a masked in-tile matmul and the cross-chunk contribution from the state entering the chunk, instead of stepping the recurrence one position at a time.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source collapses the per-position rank-one state corrections within a chunk into a WY-style representation solved once per tile, as TRUTH.md prescribes, rather than applying each correction sequentially.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source factorises the decay as TRUTH.md prescribes, forming intra-chunk decay weights from ratios of cumulative log-space sums within the tile so that no exponential of an unbounded prefix is materialised.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLbwd",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The gradients are produced by an explicitly derived reverse chunk sweep written in the candidate's own kernels as TRUTH.md prescribes, with no reliance on torch autograd differentiating through the forward chunk loop.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 2a1deafa70f6b6810bf015b22a201f9107dd5267ca2a152d02cc11af9d42e3a6
+FORGE-CANARY-SLOT-1 e21c30338eee80f964bf3276724a33ee4dfffac9413e43f84a415ab03f47a93d
+FORGE-CANARY-SLOT-2 0ed09920d356ba04ce8c4b4b4e818ce9825f5b39759088fd264df7dcc1ab9d94
+FORGE-CANARY-SLOT-3 8bf6068c93eaa8460bef77ff72b6a8f9b34cfc2382549e56f2d3755680ce8653
+FORGE-CANARY-END

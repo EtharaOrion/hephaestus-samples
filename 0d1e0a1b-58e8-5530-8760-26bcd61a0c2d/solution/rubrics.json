@@ -1,0 +1,144 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G0_trusted_entrypoint.clean\" as true, meaning the harness imported the submitted module and obtained the required entrypoint without the module raising SystemExit or otherwise aborting at import time.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G1_forbidden.hits\" as an empty list together with \"checks.G1_forbidden.clean\" true, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2a",
+      "dimension": "correctness",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G2_correctness.clean\" true with \"checks.G2_correctness.failure_count\" equal to 0 and \"checks.G2_correctness.failures\" empty, so both the forward output matched reference.py on all randomized-scale trials.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2b",
+      "dimension": "contract",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"verifier_incomplete\" as false and \"oracle_mode\" as the full private oracle rather than any degraded or skipped mode, so the correctness verdict came from a complete comparison run and not a fallback.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G3_speed.geomean_fraction_of_sota\" at or above the G3 passing threshold over the hidden shapes, and the top-level \"fraction_of_sota\" reports that same geometric mean.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "Every entry in \"checks.G3_speed.per_shape\" carries a finite positive fraction for its hidden shape and no entry falls below half of \"checks.G3_speed.geomean_fraction_of_sota\", so the reported speed is uniform across shapes rather than carried by a single favourable configuration.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.12,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G4_written_kernel.adoption\" as greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time is dominated by kernels the candidate wrote.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G4_written_kernel.declared\" as a non-empty list of triton.jit kernel names and reports both \"checks.G4_written_kernel.device_us_total\" and \"checks.G4_written_kernel.device_us_declared\" as strictly positive, so the adoption ratio is measured over real attributed device time and is not vacuously satisfied.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source computes the gated delta recurrence by partitioning the sequence into fixed-size chunks that carry a single state matrix across chunk boundaries, with the cross-chunk contribution read from that carried state and the intra-chunk contribution formed by dense matmuls inside the chunk, instead of stepping token by token as the starter does.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The per-token rank-one delta corrections inside a chunk are collapsed into a WY-style representation, built once per chunk by solving or inverting the strictly lower-triangular within-chunk interaction matrix, rather than applied as a sequential loop of rank-one state updates.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "No per-timestep scalar decay recurrence survives in the submitted source: the gate enters only through cumulative log-decay sums computed once per chunk and applied as exponentiated ratios to the intra-chunk terms and as a single factor to the carried state.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 a8050f31c24844e711ed303ba9424c9974246d7a21b5f270201c1f0c1287336c
+FORGE-CANARY-SLOT-1 e92e77de27b10fa804627db485af273d2d754dae99a2f31e9676c731431db03d
+FORGE-CANARY-SLOT-2 45f8c3dfa575e54e1ac967d3e94cc9965dbc1086023f4f3c310a15a51d08a6b7
+FORGE-CANARY-SLOT-3 e3613ebedb13d998f3af92885ac6b98ce6692de3cd3fc916d31117a71df07768
+FORGE-CANARY-END

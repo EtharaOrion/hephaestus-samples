@@ -1,0 +1,144 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G0_trusted_entrypoint.clean\" as true, meaning the submitted module was imported by the trusted entrypoint without raising SystemExit.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G1_forbidden.clean\" as true and \"checks.G1_forbidden.hits\" as an empty list, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G2_correctness.clean\" as true with \"checks.G2_correctness.failure_count\" equal to 0 and \"checks.G2_correctness.failures\" empty, so both the forward output matched reference.py under randomized scale.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G3_speed.geomean_fraction_of_sota\" as a finite number of at least 0.50 and the top-level \"fraction_of_sota\" carries that same value.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G3_speed.per_shape\" holds a finite strictly positive fraction for every hidden shape measured, and no single shape's fraction falls below one half of \"checks.G3_speed.geomean_fraction_of_sota\", so the geometric mean is not carried by one outlier shape.",
+      "judgment": "DIVERGENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "score.json records \"checks.G4_written_kernel.adoption\" as greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time is dominated by kernels the candidate declared.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "\"checks.G4_written_kernel.declared\" is a non-empty list and \"checks.G4_written_kernel.device_us_declared\" divided by a strictly positive \"checks.G4_written_kernel.device_us_total\" reproduces \"checks.G4_written_kernel.adoption\" to within 1e-6, so the adoption figure is backed by the recorded timings rather than asserted.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.06,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The submitted source computes the operator through a chunked state recurrence that carries one running state across chunk boundaries and forms each chunk's output as an intra-chunk contribution built from within-chunk terms plus a cross-chunk contribution applied from the incoming state, instead of the starter's per-position loop.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Inside a chunk the per-position rank-one corrections are collapsed into a WY style representation so the whole chunk transition is applied as dense block matrix multiplications, rather than applying each correction one position after another.",
+      "judgment": "VALUE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "numerics",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Decay is factorised into cumulative products taken relative to each chunk's start and applied as per-position rescalings of the chunk blocks and of the state handoff, so no decay weight is formed by multiplying across more than one chunk span.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "TRAJorder",
+      "dimension": "process",
+      "weight": 0.03,
+      "evaluation_target": "trajectory.json",
+      "criterion": "The recorded trajectory shows the starter baseline confirmed and the production anchor read for its formulation without importing or calling it before any candidate kernel is written, and shows device time attributed to the candidate's own triton.jit kernels before the speed result is claimed.",
+      "judgment": "ORDERING",
+      "evidence": [
+        "trajectory.json",
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 6c929f40021012d3fc5347a991e0c6fb274ffbfc9f7f24122fc4a34b5534855c
+FORGE-CANARY-SLOT-1 4ff9f70f7f0cf0489a84a05379a2b13c29097216dfa01de2674a3043e0417b6d
+FORGE-CANARY-SLOT-2 bc32f0dbf9a92764528e598342a9ecd2c09c651984b8c9737ba8c4a4e0aba4fc
+FORGE-CANARY-SLOT-3 ed11e1f65bf47fbebf39521f6b503c8cf022e8fb15ff3fe355377d4750f1f106
+FORGE-CANARY-END

@@ -1,0 +1,157 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "The submitted module loads as a trusted entrypoint, recorded as \"checks.G0_trusted_entrypoint.clean\" being true, meaning import completed without raising SystemExit or otherwise aborting collection.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "No reference-library symbol appears in the submitted source, recorded as \"checks.G1_forbidden.hits\" being an empty list together with \"checks.G1_forbidden.clean\" being true.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "Forward output and all input gradients match reference.py under the randomized-scale sweep, recorded as \"checks.G2_correctness.failure_count\" equal to 0 with \"checks.G2_correctness.failures\" empty and \"checks.G2_correctness.clean\" true.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "The candidate reaches the speed bar against the production kernel, recorded as \"checks.G3_speed.geomean_fraction_of_sota\" meeting or exceeding the gate threshold and agreeing with the top level \"fraction_of_sota\" value.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "Speed is established across the whole hidden shape set rather than one favourable case, recorded as \"checks.G3_speed.per_shape\" containing one finite positive fraction entry per measured hidden shape with no entry missing, null, or non-finite.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.1,
+      "evaluation_target": "score.json",
+      "criterion": "Graded device time is dominated by kernels the candidate wrote, recorded as \"checks.G4_written_kernel.adoption\" being greater than or equal to \"checks.G4_written_kernel.threshold\".",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4b",
+      "dimension": "authorship",
+      "weight": 0.08,
+      "evaluation_target": "score.json",
+      "criterion": "The adoption figure is backed by real declared work, recorded as \"checks.G4_written_kernel.declared\" being a non-empty list of triton.jit kernel names and \"checks.G4_written_kernel.device_us_declared\" being strictly greater than zero and not exceeding \"checks.G4_written_kernel.device_us_total\".",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "VERIFintegrity",
+      "dimension": "integrity",
+      "weight": 0.06,
+      "evaluation_target": "score.json",
+      "criterion": "The verdict is not a degraded or self-contradicting run: \"verifier_incomplete\" is false, \"oracle_mode\" names the real production oracle rather than a fallback, and the reported \"outcome\" together with \"process\" and \"reason\" is consistent with the recorded clean flags of every gate.",
+      "judgment": "DIVERGENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLchunk",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source implements the chunked formulation of the reference answer, carrying a per-chunk matrix state across chunks and splitting each chunk's output into a causal intra-chunk term computed from a masked query-key score matrix and a cross-chunk term computed as a single query-by-state matmul.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Within a chunk the sequential rank-1 state corrections are collapsed into a WY style representation obtained by a triangular solve or equivalent unrolled inverse of the strictly lower triangular interaction matrix, so no loop over individual timesteps inside a chunk remains in the hot path.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "Decay is applied through the factorised form of the reference answer, using an in-chunk cumulative sum of log decays whose differences give pairwise decay factors and whose chunk total scales the incoming state, rather than a stepwise multiplicative recurrence over positions.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLbwd",
+      "dimension": "gradients",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The backward pass is written in the candidate's own kernels and traverses chunks in reverse order propagating an adjoint state, mirroring the same intra-chunk versus cross-chunk decomposition and decay factorisation used in the forward direction.",
+      "judgment": "ORDERING",
+      "evidence": [
+        "candidate_kernel.py",
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 beb3630eb2386931f3095668f3f06d7b4e2f0627b5e45a26f7797d6475c30a0a
+FORGE-CANARY-SLOT-1 95ad8a25a8c85262317d4d57b0fbd2237a8bb3ac27393641c70b056941aac641
+FORGE-CANARY-SLOT-2 1462a0a75eeda29612d75c913ed08043ce8515d77567866dcba50c9dca58e168
+FORGE-CANARY-SLOT-3 1dedf61af7593b69390069711c6dedc20133b4403d829b53e6875b0a1e3af5b3
+FORGE-CANARY-END

@@ -1,0 +1,155 @@
+{
+  "banner": "GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml",
+  "items": [
+    {
+      "id": "G0",
+      "dimension": "contract",
+      "weight": 0.09,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G0_trusted_entrypoint.clean\" is true, meaning the submitted module was imported by the harness without raising SystemExit or otherwise refusing to load.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G1",
+      "dimension": "authorship",
+      "weight": 0.11,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G1_forbidden.hits\" is an empty list and \"checks.G1_forbidden.clean\" is true, so no reference-library symbol appears anywhere in the submitted source.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G2",
+      "dimension": "correctness",
+      "weight": 0.15,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G2_correctness.clean\" is true and \"checks.G2_correctness.failure_count\" equals 0, so both the output and every input gradient matched reference.py under randomized input scale.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3a",
+      "dimension": "performance",
+      "weight": 0.16,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G3_speed.geomean_fraction_of_sota\" is a recorded number of at least 0.50, so the candidate reaches at least half the production kernel's throughput on the geometric mean over hidden shapes.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G3b",
+      "dimension": "performance",
+      "weight": 0.11,
+      "evaluation_target": "score.json",
+      "criterion": "Every per-shape entry recorded in \"checks.G3_speed.per_shape\" reports a fraction of at least 0.30, so no single hidden shape collapses while the geometric mean in \"checks.G3_speed.geomean_fraction_of_sota\" is carried by the others.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "G4a",
+      "dimension": "authorship",
+      "weight": 0.14,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"checks.G4_written_kernel.adoption\" is greater than or equal to \"checks.G4_written_kernel.threshold\", so the graded device time in \"checks.G4_written_kernel.device_us_declared\" is dominated by kernels the candidate declared rather than by imported ones.",
+      "judgment": "VALUE",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "GV",
+      "dimension": "contract",
+      "weight": 0.04,
+      "evaluation_target": "score.json",
+      "criterion": "The field \"verifier_incomplete\" is false and \"oracle_mode\" is populated, so the recorded gate results come from a complete verification run rather than a degraded or short-circuited one.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "score.json"
+      ],
+      "mode": "compiled"
+    },
+    {
+      "id": "SOLdecay",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source factorises the gate by accumulating an inclusive cumulative log-gate in fp32 within each chunk and rescaling k and q by exponentials of non-positive differences, so per-timestep diagonal multiplies of the D x D state are replaced by one scalar per chunk boundary plus an intra-chunk outer-difference mask and no exponential of a positive argument can overflow at randomized input scale.",
+      "judgment": "INVARIANT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLwy",
+      "dimension": "algorithm",
+      "weight": 0.05,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source collapses the chunk's C gated rank-1 corrections into a WY-style representation by solving one unit triangular system per chunk and forming w and u with matmuls, so no loop over individual timesteps inside a chunk survives in the forward kernel.",
+      "judgment": "ABSENCE",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLsplit",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The source splits the output into a masked intra-chunk matmul term and a cross-chunk term against the carried state, leaving the chunk-level recurrence S_next = exp(g_last) S + K^T (u - w S) as the only sequential object, launched over batch, head and value-dimension tiles while the intra-chunk kernels run all chunks concurrently.",
+      "judgment": "EFFECT",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "SOLbwd",
+      "dimension": "algorithm",
+      "weight": 0.04,
+      "evaluation_target": "candidate_kernel.py",
+      "criterion": "The backward pass reuses the same chunked decomposition in reverse, running the dS recurrence from last chunk to first against the per-chunk states materialised by the forward, reapplying the triangular solve in transposed form, and finishing the gate gradient with a reverse cumulative sum inside each chunk.",
+      "judgment": "ORDERING",
+      "evidence": [
+        "candidate_kernel.py"
+      ],
+      "mode": "judged"
+    },
+    {
+      "id": "G4b",
+      "dimension": "process",
+      "weight": 0.03,
+      "evaluation_target": "trajectory.json",
+      "criterion": "The trajectory records a device-time attribution measurement identifying the candidate's own triton.jit kernels as the dominant cost, performed before the speed result is asserted as final rather than after it.",
+      "judgment": "ORDERING",
+      "evidence": [
+        "trajectory.json"
+      ],
+      "mode": "judged"
+    }
+  ]
+}
+FORGE-CANARY-BEGIN forge-canary/v1
+FORGE-CANARY-SLOT-0 e1babe41f81202dabfe8359afd8b5de29f822b2471ef5b83e1a6ec13bfadd1c8
+FORGE-CANARY-SLOT-1 0226c24712e845c431dad141943e1c24d4e96ff960427d36ebcae525b45da5f5
+FORGE-CANARY-SLOT-2 f66c96128e13464a51db92505b855c2d3e45b9331e8d30843e7c68fa0fe97f49
+FORGE-CANARY-SLOT-3 3143df2c938f203c96533fb9165a5c0ac6d8607bda73a72c3ecaaf9af4f11605
+FORGE-CANARY-END

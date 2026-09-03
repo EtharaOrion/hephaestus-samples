@@ -1,0 +1,4 @@
+{"id": "diag_chunked_matmul", "question": "Does the submitted source compute the intra-chunk term as dense matmuls over a chunk tile -- of the form tril(Q_dec K_dec^T, -1) U plus Q_dec S -- rather than as a per-timestep rank-1 update loop?"}
+{"id": "diag_wy_form", "question": "Does the submitted source collapse the per-timestep delta corrections of a chunk into a WY representation or an equivalent exact formulation, inverting the intra-chunk lower-triangular system rather than approximating or skipping it?"}
+{"id": "diag_gate_cumsum", "question": "Does the submitted source factor the gate as a float32 cumulative sum of log g per chunk, with the exponent argument bounded before the exp, rather than applying the decay per timestep?"}
+{"id": "diag_bwd_chunked", "question": "Is the backward pass a reverse-order chunk scan in declared Triton kernels, with no per-timestep or per-chunk Python loop inside the autograd graph?"}
