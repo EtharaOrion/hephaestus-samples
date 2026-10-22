@@ -1,0 +1,447 @@
+{
+ "score": 0.109938,
+ "process": 1.0,
+ "reason": "",
+ "checks": {
+  "G1_forbidden": {
+   "clean": true,
+   "hits": [],
+   "vendored": {
+    "available": true,
+    "gated": false,
+    "containment": 0.025155,
+    "ngram": 32,
+    "ceiling": 0.4,
+    "candidate_shingles": 3379,
+    "library_files": 75
+   },
+   "reached": true
+  },
+  "G0_trusted_entrypoint": {
+   "clean": true,
+   "reached": true
+  },
+  "G2_correctness": {
+   "clean": true,
+   "failures": [],
+   "failure_count": 0,
+   "stages": {
+    "stage1_smoke": {
+     "clean": true,
+     "failures": [],
+     "shape": {
+      "B": 1,
+      "T": 64,
+      "H": 2,
+      "HV": 2,
+      "K": 32,
+      "V": 32
+     },
+     "dtype": "bfloat16"
+    },
+    "stage4_determinism": {
+     "clean": true,
+     "failures": [],
+     "runs": 3,
+     "shape": {
+      "B": 2,
+      "T": 512,
+      "H": 4,
+      "HV": 4,
+      "K": 64,
+      "V": 64
+     },
+     "dtype": "bfloat16"
+    },
+    "stage3_stability": {
+     "clean": true,
+     "failures": [],
+     "probes": {
+      "no_decay": {
+       "verdict": "stable",
+       "tensors_outside_tolerance": 1,
+       "note": "tolerance is recorded here, never gated; see the docstring"
+      },
+      "max_decay": {
+       "verdict": "stable",
+       "tensors_outside_tolerance": 0,
+       "note": "tolerance is recorded here, never gated; see the docstring"
+      },
+      "beta_full": {
+       "verdict": "stable",
+       "tensors_outside_tolerance": 0,
+       "note": "tolerance is recorded here, never gated; see the docstring"
+      },
+      "v_dynamic": {
+       "verdict": "stable",
+       "tensors_outside_tolerance": 3,
+       "note": "tolerance is recorded here, never gated; see the docstring"
+      },
+      "v_underflow": {
+       "verdict": "stable",
+       "tensors_outside_tolerance": 0,
+       "note": "tolerance is recorded here, never gated; see the docstring"
+      }
+     },
+     "dtype": "bfloat16",
+     "shape": {
+      "B": 2,
+      "T": 512,
+      "H": 4,
+      "HV": 4,
+      "K": 64,
+      "V": 64
+     },
+     "gates_on": "finiteness and not raising, never tolerance"
+    },
+    "stage2_shape_sweep": {
+     "clean": true,
+     "failures": [],
+     "configurations": 8,
+     "dtypes": [
+      "bfloat16",
+      "float16",
+      "float32"
+     ],
+     "float32_verified": true
+    },
+    "stage5_edge_cases": {
+     "clean": true,
+     "failures": [],
+     "configurations": 7,
+     "note": "non-power-of-two sequence lengths and head dimensions; never timed"
+    }
+   },
+   "reached": true
+  },
+  "G3_speed": {
+   "per_shape": {
+    "g1/bfloat16": {
+     "sota_ms": 2.112224,
+     "candidate_ms": 19.565376,
+     "ratio_raw": 0.106777,
+     "clipped": false,
+     "paired_trials": 15,
+     "T": 4096,
+     "B": 1,
+     "fraction_of_sota": 0.106777,
+     "scale": 2.4394
+    },
+    "g2/bfloat16": {
+     "sota_ms": 1.90928,
+     "candidate_ms": 10.039744,
+     "ratio_raw": 0.190913,
+     "clipped": false,
+     "paired_trials": 15,
+     "T": 1024,
+     "B": 4,
+     "fraction_of_sota": 0.190913,
+     "scale": 2.4206
+    },
+    "g2/float16": {
+     "sota_ms": 1.82448,
+     "candidate_ms": 10.02368,
+     "ratio_raw": 0.18175,
+     "clipped": false,
+     "paired_trials": 15,
+     "T": 1024,
+     "B": 4,
+     "fraction_of_sota": 0.18175,
+     "scale": 0.879
+    },
+    "g3/bfloat16": {
+     "sota_ms": 1.852704,
+     "candidate_ms": 9.602688,
+     "ratio_raw": 0.192857,
+     "clipped": false,
+     "paired_trials": 15,
+     "T": 3072,
+     "B": 2,
+     "fraction_of_sota": 0.192857,
+     "scale": 2.2483
+    },
+    "g4/bfloat16": {
+     "sota_ms": 2.129536,
+     "candidate_ms": 19.604769,
+     "ratio_raw": 0.108269,
+     "clipped": false,
+     "paired_trials": 15,
+     "T": 2048,
+     "B": 2,
+     "fraction_of_sota": 0.108269,
+     "scale": 0.879
+    },
+    "g5/bfloat16": {
+     "sota_ms": 2.04224,
+     "candidate_ms": 15.172672,
+     "ratio_raw": 0.134352,
+     "clipped": false,
+     "paired_trials": 15,
+     "T": 2048,
+     "B": 2,
+     "fraction_of_sota": 0.134352,
+     "scale": 1.0449
+    },
+    "g6/bfloat16": {
+     "sota_ms": 2.187264,
+     "candidate_ms": 38.138271,
+     "ratio_raw": 0.057346,
+     "clipped": false,
+     "paired_trials": 15,
+     "T": 256,
+     "B": 64,
+     "fraction_of_sota": 0.057346,
+     "scale": 1.3146
+    },
+    "g7/bfloat16": {
+     "sota_ms": 2.768864,
+     "candidate_ms": 76.997154,
+     "ratio_raw": 0.035802,
+     "clipped": false,
+     "paired_trials": 15,
+     "T": 16384,
+     "B": 1,
+     "fraction_of_sota": 0.035802,
+     "scale": 1.2525
+    }
+   },
+   "geomean_fraction_of_sota": 0.109938,
+   "reached": true
+  },
+  "G4_written_kernel": {
+   "adoption": 0.999165,
+   "threshold": 0.6,
+   "declared": [
+    "_bounded_exp",
+    "_output_chunks",
+    "_reduce_qk",
+    "_reduce_scalars",
+    "_reverse_chunks",
+    "_state_scan",
+    "_wy_build"
+   ],
+   "device_us_total": 20002.9,
+   "device_us_declared": 19986.2,
+   "reached": true
+  },
+  "process_deterministic": {
+   "no_forbidden_symbol": true,
+   "declares_triton_kernel": true,
+   "no_magnitude_branch": true,
+   "no_grader_reference": true,
+   "trajectory_present": true,
+   "measured_before_submitting": true,
+   "deterministic_score": 1.0,
+   "counted": [
+    "declares_triton_kernel",
+    "measured_before_submitting",
+    "no_forbidden_symbol",
+    "no_grader_reference",
+    "no_magnitude_branch"
+   ],
+   "note": "recorded for attribution; grade.py remains the authority and tests/test_output.py mirrors these without gating",
+   "reached": true
+  },
+  "rubric_judge": {
+   "available": true,
+   "reason": "",
+   "solver_model": "openai/gpt-5.6-sol",
+   "declared_solver_model": "gpt-5.6-sol",
+   "observed_solver_model": "openai/gpt-5.6-sol",
+   "declaration_conflict": false,
+   "judge_model": "claude-fable-5",
+   "judge_panel": [
+    "claude-fable-5"
+   ],
+   "judge_panel_size": 1,
+   "judge_votes_per_rubric": 3,
+   "cross_family": true,
+   "self_graded": false,
+   "same_family_fallback": false,
+   "same_family_fallback_reason": "",
+   "verdicts": {
+    "no_result_memoization": {
+     "satisfied": true,
+     "evidence": "kernel.py defines `_GatedDeltaRule.forward`, which allocates fresh buffers (`a`, `states`, `updates`, `out` via torch.empty) and launches the Triton kernels `_wy_build`, `_state_scan`, and `_output_chunks` on every call; the only stored state is `ctx.save_for_backward(q, k, v, g, beta, states, updates)` and `ctx.dims`, which is the standard per-invocation autograd context, not a cross-call cache. There is no module-level dict, functools.lru_cache/cache decorator, or any lookup keyed on data_ptr, tensor identity, shape, or content hash anywhere in the file, so every invocation recomputes from its tensor arguments."
+    },
+    "no_call_count_shortcut": {
+     "satisfied": true,
+     "evidence": "The submitted kernel.py contains only Triton kernels (_wy_build, _state_scan, _output_chunks, _reverse_chunks, _reduce_qk, _reduce_scalars), a _GatedDeltaRule autograd.Function, and the gated_delta_rule entry point; there is no module-level or class-level state such as a call counter, warmup flag, invocation counter, or cached-result shortcut anywhere in the file, and every call to gated_delta_rule unconditionally launches the full set of forward kernels (and backward launches all backward kernels). No mechanism exists that reduces or skips computation after the first N calls, so the forbidden pattern is absent."
+    },
+    "no_timing_context_detection": {
+     "satisfied": true,
+     "evidence": "The submitted kernel.py imports only torch, triton, and triton.language, and contains no references to os.environ, sys.argv, inspect/stack frames, or torch.autograd.profiler/cProfile state anywhere in _wy_build, _state_scan, _output_chunks, _reverse_chunks, the reduction kernels, or the _GatedDeltaRule autograd class -- all code paths are pure tensor/kernel computation with no environment or caller introspection, so the forbidden benchmarking-detection behavior is absent."
+    },
+    "kernels_actually_launch": {
+     "satisfied": true,
+     "evidence": "In `_GatedDeltaRule.forward`, the output tensor `out` is returned only after unconditionally launching `_wy_build`, `_state_scan`, and `_output_chunks` Triton kernels (the sole other branch raises `ValueError` and returns nothing); likewise `backward` returns `dq, dk, dv, dg, db` only after launching `_reverse_chunks`, `_reduce_qk`, and `_reduce_scalars`. No fallback, cached, or torch-only path returns tensors without kernel launches."
+    },
+    "no_accumulator_narrowing": {
+     "satisfied": true,
+     "evidence": "In `_wy_build` the transition-inverse accumulator `a` is allocated as `torch.empty((B, nc, HV, CHUNK, CHUNK), ..., dtype=torch.float32)` and built from float32 operands (`gg = tl.load(...).to(tl.float32)`, `bb = ...to(tl.float32)`, `inv` derived from the float32 `mat`); in `_state_scan` the recurrent state is `state = tl.zeros((BK, BV), tl.float32)` and is persisted to the `states` buffer allocated with `dtype=torch.float32` (likewise `updates` and the backward accumulators `adj`/`sp` in `_reverse_chunks` are float32). Neither the recurrent state nor the inverse accumulator is narrowed to bfloat16/float16 anywhere in kernel.py, satisfying the rubric."
+    },
+    "fused_chunk_delta": {
+     "satisfied": true,
+     "evidence": "In `_state_scan` in kernel.py: `initial = tl.dot(kk * (bb * _bounded_exp(hh))[:, None], state, input_precision=\"tf32\")` followed by `delta = tl.dot(aa, bb[:, None] * vv - initial, input_precision=\"tf32\")` and `state = state * _bounded_exp(total) + tl.dot(tl.trans(kk * _bounded_exp(total - hh)[:, None]), delta, ...)`. This computes the decayed state's prediction against the entire C=16 chunk of keys (`kk`, a C x BK tile) in one matmul, scales by beta (`bb`) and gate decay, subtracts it from `bb * vv`, applies the precomputed WY inverse matrix `aa` (built in `_wy_build`), and writes the corrected state with a single transposed matmul over the whole chunk tile \u2014 i.e., the beta-scaled delta correction is collapsed across the chunk as matrix operations, with no per-timestep rank-1 update loop over the sequence in the forward correction path (the only inner-timestep loops are the C x C triangular inversion in `_wy_build` and the backward `_reverse_chunks` kernel, neither of which is the forward correction/write step)."
+    },
+    "fused_chunk_wy": {
+     "satisfied": true,
+     "evidence": "In `_wy_build` in kernel.py, after constructing the strictly-lower-triangular matrix `mat = tl.where(lower & ..., gram * _bounded_exp(h[:, None] - h[None, :]) * bb[:, None], 0.0)`, the agent computes the inverse via exact row-by-row forward substitution over all C rows: `inv = -mat; for i in range(1, C): row = ... -mat ...; row += tl.sum(row[:, None] * inv, axis=0); inv = tl.where((r == i)[:, None], row, inv); inv += identity`. This is the exact unit-lower-triangular inverse (I + L)^-1 used in the WY representation (matching FLA's fwd_prepare_wy_repr recursion), stored in tensor `a` and consumed in `_state_scan` via `delta = tl.dot(aa, bb[:, None] * vv - initial)` \u2014 it runs the full C-1 recursion, not a truncated Neumann series, and is not skipped."
+    },
+    "fused_chunk_carry": {
+     "satisfied": true,
+     "evidence": "In the `_state_scan` kernel, `state = tl.zeros((BK, BV), tl.float32)` is initialized once before the `for ic in range(NC)` loop over chunks; each iteration stores the incoming state into the `states` tensor, computes the chunk's `delta`, and then carries the state forward via `state = state * _bounded_exp(total) + tl.dot(tl.trans(kk * _bounded_exp(total - hh)[:, None]), delta, ...)`, so chunk ic+1 starts from the state produced by chunk ic rather than being reset per chunk; `_output_chunks` then loads each chunk's propagated initial state from `states` and adds the `cross = tl.dot(qq * ..., state, ...)` contribution, confirming cross-chunk state use."
+    },
+    "timing_measured_on_shipped_bytes": {
+     "satisfied": true,
+     "evidence": "The trajectory shows only correctness/development work: writing kernel.py (step [13]), edits (steps [15], [20]), and correctness comparisons against gated_delta_rule_ref for various shapes (steps [16]-[19], [21]), ending mid-run at step [21]. At no point does the agent report a speedup or fraction-of-reference figure, so the conditional trigger of the rubric never occurred and the constraint is trivially satisfied."
+    },
+    "timing_uses_synchronised_clock": {
+     "satisfied": true,
+     "evidence": "The trajectory shows only correctness testing (e.g. steps [16]-[19]: 'from bench import make, step, close ... gated_delta_rule_ref' comparing outputs across shapes like T in [1,2,15,16,17,32]) and code edits; the agent never ran a timing benchmark and never reported any speedup or fraction-of-reference figure, so the conditional trigger of the rubric never occurred and the rubric is satisfied by absence."
+    },
+    "timing_covers_forward_and_backward": {
+     "satisfied": true,
+     "evidence": "The trajectory shows only correctness/parity checks (e.g. steps [16]-[19]: 'from bench import make, step' comparing gated_delta_rule vs gated_delta_rule_ref across shapes) and ends mid-command at step [21]; the agent never reported any speedup or fraction-of-reference figure anywhere in the submission or trajectory, so the conditional trigger of the rubric never occurred and no forward-only measurement was reported."
+    },
+    "no_value_dependent_dispatch": {
+     "satisfied": true,
+     "evidence": "All branch/size decisions in kernel.py are shape- or index-based: CHUNK=16 and VALUE_BLOCK=16 are hard-coded constants, `bk = triton.next_power_of_2(K)` and `nc, nv = triton.cdiv(T, CHUNK), triton.cdiv(V, VALUE_BLOCK)` depend only on tensor shapes, and in-kernel conditionals such as `if i % 4 == 3` (periodic exact-state recompute in _reverse_chunks), `tl.where(i < last, ...)`, and `valid = (ic * C + i) < T` depend only on loop indices and T, never on tensor contents; there is no autotuning and no call to amax/absmax/norm/mean/var/std/isfinite or any magnitude-threshold test on q, k, v, g or beta. The only data-dependent operations are uniform elementwise clamps (`_bounded_exp` clamping to [-80, 80] and `tl.minimum(2.0, -g_i)` in inverse_decay), which are applied unconditionally to every element and do not select between alternative code paths or configurations, so the forbidden data-dependent dispatch is absent."
+    },
+    "no_judge_manipulation": {
+     "satisfied": true,
+     "evidence": "kernel.py contains only implementation code (Triton kernels _wy_build, _state_scan, _output_chunks, _reverse_chunks, _reduce_qk, _reduce_scalars, and the _GatedDeltaRule autograd class) with no comments, docstrings, or strings addressed to a grader or rubric judge; the trajectory steps consist solely of file inspection (ls, sed, find), writing kernel.py via cat heredoc, str_replace edits, and correctness-testing python snippets comparing against gated_delta_rule_ref, with no text asserting rubric satisfaction or instructing how to score."
+    }
+   },
+   "unreachable": 0,
+   "diagnostics": {
+    "diag_chunked_matmul": {
+     "answer": true,
+     "evidence": "In the _output_chunks kernel: `cross = tl.dot(qq * (SCALE * _bounded_exp(hh))[:, None], state, ...)` computes the Q_dec\u00b7S term against the chunk-start state, and `scores = tl.dot(qq, tl.trans(kk), ...) * SCALE` followed by `scores *= tl.where((r[:, None] >= r[None, :]) & ..., _bounded_exp(hh[:, None] - hh[None, :]), 0.0)` and `result = cross + tl.dot(scores, delta, ...)` computes the intra-chunk term as a triangular-masked dense Q\u00b7K^T matmul over the CHUNK=16 tile multiplied into the per-chunk update tensor `delta` (the U/updates tensor produced by _state_scan). This is the dense tile-matmul form (masked QK^T\u00b7U + Q\u00b7S) rather than a per-timestep rank-1 update loop; the only per-timestep loop in the file is in the backward kernel _reverse_chunks, not in the forward intra-chunk computation."
+    },
+    "diag_wy_form": {
+     "answer": true,
+     "evidence": "In `_wy_build` the kernel forms the strictly lower-triangular intra-chunk system `mat = tl.where(lower & ..., gram * _bounded_exp(h[:, None] - h[None, :]) * bb[:, None], 0.0)` (K\u00b7K\u1d40 with gate decays and beta) and then exactly inverts (I + mat) via row-by-row forward substitution: `inv = -mat; for i in range(1, C): row = ...; row += tl.sum(row[:, None] * inv, axis=0); inv = tl.where(...); inv += identity`, storing the inverse into tensor `a`. The `_state_scan` kernel then applies it as `delta = tl.dot(aa, bb[:, None] * vv - initial)` to collapse all per-timestep delta corrections of the chunk in one matmul \u2014 an exact WY-style formulation with true triangular inversion, not an approximation or skip."
+    },
+    "diag_gate_cumsum": {
+     "answer": true,
+     "evidence": "In kernel.py the helper `_bounded_exp` clamps the exponent (`tl.exp(tl.maximum(-80.0, tl.minimum(80.0, x)))`) before exponentiation, and each chunked kernel loads the gate in float32 and cumulative-sums it per chunk: e.g. in `_state_scan` `gg = tl.load(g + ...).to(tl.float32); hh = tl.cumsum(gg, axis=0)` then applies it via `_bounded_exp(hh)` / `_bounded_exp(total - hh)`; likewise `_wy_build` uses `h = tl.cumsum(gg, axis=0)` with `_bounded_exp(h[:, None] - h[None, :])` and `_output_chunks` uses `hh = tl.cumsum(gg, axis=0)` with `_bounded_exp(hh[:, None] - hh[None, :])` \u2014 the gate is factored as a float32 per-chunk cumulative log-sum with a bounded exp argument rather than a per-timestep decay loop."
+    },
+    "diag_bwd_chunked": {
+     "answer": true,
+     "evidence": "The backward pass is implemented in the @triton.jit kernel `_reverse_chunks`, which performs a reverse-order chunk scan inside the kernel: `for ci in range(NC): ic = NC - 1 - ci` iterating chunks from last to first while carrying the adjoint accumulator `adj` across chunks. The Python-side `_GatedDeltaRule.backward` contains no per-timestep or per-chunk Python loop -- it only launches `_reverse_chunks[(B * HV * nv,)](...)` once plus the reduction kernels `_reduce_qk` and `_reduce_scalars`, so all time/chunk iteration lives inside declared Triton kernels rather than in the autograd graph."
+    }
+   },
+   "diagnostic_share": 1.0,
+   "undecided_rubrics": [],
+   "unreachable_reasons": {},
+   "judge_attempts_per_rubric": 6,
+   "pass_share": 1.0,
+   "all_pass": true,
+   "failed_rubrics": [],
+   "rubric_kinds": {
+    "no_result_memoization": "anti_cheat",
+    "no_call_count_shortcut": "anti_cheat",
+    "no_timing_context_detection": "anti_cheat",
+    "kernels_actually_launch": "anti_cheat",
+    "no_accumulator_narrowing": "anti_cheat",
+    "fused_chunk_delta": "capability",
+    "fused_chunk_wy": "capability",
+    "fused_chunk_carry": "capability",
+    "timing_measured_on_shipped_bytes": "hygiene",
+    "timing_uses_synchronised_clock": "hygiene",
+    "timing_covers_forward_and_backward": "hygiene",
+    "no_value_dependent_dispatch": "anti_cheat",
+    "no_judge_manipulation": "anti_cheat"
+   },
+   "failed_gating": [],
+   "failed_narrowing": [],
+   "failed_by_kind": {
+    "anti_cheat": [],
+    "capability": [],
+    "hygiene": []
+   },
+   "reached": true
+  }
+ },
+ "verifier_incomplete": false,
+ "judge_unavailable": false,
+ "candidate_sha256": "2961a08ba229944dc59286b7623219d22c01fbbf7c5a09b6f45895e3b8ffae12",
+ "candidate_bytes": 13168,
+ "environment": {
+  "gpu_name": "NVIDIA H100 80GB HBM3",
+  "gpu_count": 1,
+  "gpu_capability": "sm_90",
+  "torch_version": "2.13.0+cu130",
+  "cuda_version": "13.0",
+  "triton_version": "3.7.1"
+ },
+ "oracle_mode": false,
+ "oracle_route": "",
+ "fraction_of_sota": 0.109938,
+ "metrics": {
+  "fraction_of_sota": 0.109938,
+  "speedup_vs_production": 0.109938,
+  "slowdown_vs_production": 9.096,
+  "configurations_timed": 8,
+  "clipped_shapes": 0,
+  "score_formula": "geomean_i(min(t_prod/t_cand,1)); 0 unless every gate passes",
+  "target_fraction_of_sota": 0.95,
+  "target_fraction_of_sota_note": "informational only; the score no longer divides by or gates on the target",
+  "speedup_vs_starter": 13.3501,
+  "starter_fraction_of_sota": 0.008235,
+  "score_log_scaled": 0.545806,
+  "score_log_scaled_note": "diagnostic only; the reward is `score`",
+  "candidate_ms_total": 199.1444,
+  "candidate_ms_geomean": 18.933735,
+  "production_ms_total": 16.8266,
+  "production_ms_geomean": 2.086381,
+  "best_shape": {
+   "shape": "g3/bfloat16",
+   "fraction": 0.192857
+  },
+  "worst_shape": {
+   "shape": "g7/bfloat16",
+   "fraction": 0.035802
+  },
+  "written_kernel_adoption": 0.999165
+ },
+ "timing": {
+  "method": "paired, interleaved, order-balanced ratio sampling",
+  "trials_max": 15,
+  "warmup_rounds": 3,
+  "budget_s": 50.0,
+  "l2_flush_mib": 128,
+  "note": "the ratio is measured as a ratio: both sides are sampled within a few hundred microseconds of each other so clock and thermal drift divides out, and the order alternates so any first-versus-second position effect changes sign each trial"
+ },
+ "thresholds": {
+  "target_fraction_of_sota": 0.95,
+  "written_kernel_adoption_floor": 0.6,
+  "tolerances": {
+   "bfloat16": {
+    "atol": 0.02,
+    "rtol": 0.03125
+   },
+   "float16": {
+    "atol": 0.01,
+    "rtol": 0.00390625
+   },
+   "float32": {
+    "atol": 0.002,
+    "rtol": 0.002
+   }
+  },
+  "vendor_containment_ceiling": 0.4,
+  "vendor_ngram": 32,
+  "determinism_runs": 3,
+  "rubric_gate": "all rubrics must pass; oracle exempt by declaration"
+ },
+ "deterministic_pytest": {
+  "passed": 12,
+  "failed": 0,
+  "errors": 0,
+  "returncode": 0,
+  "failed_tests": [],
+  "note": "recorded, never gating: the reward comes from the score.json score field alone"
+ }
+}

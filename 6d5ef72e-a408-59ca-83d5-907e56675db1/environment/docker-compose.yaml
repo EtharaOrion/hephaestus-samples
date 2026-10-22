@@ -1,0 +1,23 @@
+# Harbor merges this over its own build compose. task.toml declares gpus = 1, but
+# Harbor's docker backend does not translate that into a device request, so the
+# reservation is made explicitly and stays scoped to this task rather than
+# changing the host's default runtime. Without it the graded denominator cannot
+# run at all: this operator is a CUDA kernel and there is nothing to time on CPU.
+services:
+  main:
+    # Build context is the bundle root, not environment/, so the Dockerfile can
+    # COPY instruction.md from the root alongside the environment/ sources.
+    # Each agent-visible file exists exactly once in the bundle — no duplicate
+    # copies to go stale between the bundle and the image.
+    build:
+      context: ..
+      dockerfile: environment/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

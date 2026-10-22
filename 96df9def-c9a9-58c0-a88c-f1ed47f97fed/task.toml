@@ -1,0 +1,50 @@
+schema_version = "1.4"
+
+[task]
+name = "hephaestus/chunked_dplr_delta"
+version = "1.0.0"
+description = "Implement the chunk-parallel DPLR generalized delta rule forward and backward for the H100, scored as a saturating fraction of a real production Triton kernel over a hidden shape sweep."
+authors = [{ name = "Ethara.AI Research", email = "research@ethara.ai" }]
+keywords = ["gpu-kernel", "triton", "linear-attention", "optimization", "bounded-continuous"]
+tags = ["optimization", "bounded-continuous"]
+
+[metadata]
+surface = "fwdbwd"
+editable_paths = ["kernel.py"]
+artifacts = ["/logs/agent/trajectory.json"]
+sota_anchor = "flash-linear-attention==0.5.2 (pip, chunked DPLR delta implementation)"
+max_timeout_hours = 6.0
+difficulty_explanation = "The starter is correct and 359x slower than the production anchor (0.002783 of it), so no amount of local tuning closes the gap: parity requires replacing a per-timestep scan with a chunk-parallel formulation, and a correct per-timestep implementation scores near zero. Reaching it means deriving the DPLR chunk algebra unaided -- the intra-chunk (A_qk, A_qb, A_ab, A_ak) cascade, an exact whole-chunk inverse of the (I + A_ab) erasure matrix, and a state carried across chunk boundaries in float32 -- and then differentiating it, because the graded surface is forward AND backward and all six input gradients (dq, dk, dv, dalpha, dbeta, dgk) must match the oracle. Two shortcuts that look right are graded wrong: alpha == beta == 0 collapses the operator to gated linear attention, and alpha == k with beta == -k*s collapses it to the Householder delta rule, so a solver that pattern-matches this to the ordinary delta rule fails correctness rather than merely scoring low. The graded distribution stresses long context (T = 8192, roughly 128 chunk-boundary carries), where a bf16 boundary state drifts outside tolerance even when the algebra is right, so precision placement is itself part of the problem. Measured: across 66 graded attempts by two frontier cohorts, neither reached production parity -- best 0.803629 (claude-opus-5) and 0.255671 (gpt-5.6-sol) -- and 28 of those attempts scored exactly zero, most of them on backward-pass gradient mismatch rather than on speed. These figures are recomputed from the committed rollouts under trajectories/; an earlier revision quoted 36 attempts, best 0.2090 for the gpt cohort, and 16 zeros, which were frozen against a pre-fix snapshot and did not reconcile."
+max_attempts = 50
+final_selection = "best"
+refinement_loop = "each iteration solves, submits and is graded; the trajectory is summarised and the next iteration starts from that summary carrying every prior approach and its reward"
+
+[metadata.score_schema]
+contract_path = "/logs/verifier/score.json"
+metrics = ["score", "process"]
+score_range = [0.0, 1.0]
+score_full_reward = 1.0
+score_definition = "geomean over hidden shapes of min(production_time/candidate_time,1); 0 unless every gate passes"
+process_range = [0.0, 1.0]
+process_full_reward = 1.0
+aggregation = "single-step"
+
+[agent]
+timeout_sec = 21600.0
+max_timeout_sec = 21600.0
+attempt_cap = 50
+user = "agent"
+network_mode = "allowlist"
+allowed_hosts = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
+[environment]
+gpus = 1
+gpu_types = ["H100"]
+network_mode = "no-network"
+
+[verifier]
+timeout_sec = 7200.0
+user = "root"
+environment_mode = "shared"
+network_mode = "allowlist"
+allowed_hosts = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]

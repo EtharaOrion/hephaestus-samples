@@ -1,0 +1,22 @@
+services:
+  main:
+    build:
+      context: ..
+      dockerfile: environment/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # NO extra_hosts. Docker refuses "custom host-to-IP mapping" together with
+    # `network_mode: service:`, and harbor puts the main container on exactly that
+    # when an allowlist is declared, so it can route egress through its control
+    # sidecar. Measured 2026-08-14: the first oracle run after the allowlist was
+    # added died in 2 seconds with
+    #   Error response from daemon: conflicting options: custom host-to-IP
+    #   mapping and the network mode
+    # The mapping was vestigial anyway -- nothing resolves host.docker.internal.
+    # Both the runner (LLM_BASE_URL) and the judge (/proc/net/route) discover the
+    # gateway ADDRESS at runtime, which is what makes the harness portable.

@@ -1,0 +1,66 @@
+set -uo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WS="${CANDIDATE_TREE:-/workspace}"
+SCORE_PATH="${SCORE_PATH:-/logs/verifier/score.json}"
+PYBIN="${VERIFIER_PYTHON:-python3}"
+VDIR="$(dirname "$SCORE_PATH")"
+mkdir -p "$VDIR"
+
+# Per-run completion secret. grade_core reads it on fd 3 before importing the
+# candidate (then closes the fd), signs the score's reward-relevant projection
+# with it in emit(), and emit_reward.py -- a process the candidate never entered
+# -- reads the same secret on fd 3 to verify that signature. It never appears in
+# argv or the environment, so candidate code cannot observe it. This is what
+# stops a candidate from writing a fabricated all-clean score.json at import and
+# os._exit(0)-ing before the real verdict: no emit(), no valid signature, no pay.
+AUTH="$(head -c 32 /dev/urandom 2>/dev/null | od -An -tx1 2>/dev/null | tr -d ' \n')"
+AUTH="${AUTH:-$(date +%s%N)$$RANDOM}"
+
+"$PYBIN" "$HERE/grade.py" --candidate "$WS/kernel.py" --reference "$HERE/reference.py" --out "$SCORE_PATH" 3<<<"$AUTH"
+rc=$?
+
+if [ ! -s "$SCORE_PATH" ]; then
+  printf '{"score": 0.0, "process": 0.0, "reason": "verifier produced no score file"}\n' > "$SCORE_PATH"
+fi
+
+# THE DETERMINISTIC HALF IS PYTEST. grade.py measures; tests/test_output.py
+# asserts (compiled from the rubric items whose mode is `compiled`, one test per
+# item). The result is RECORDED and deliberately does NOT gate: a candidate that
+# legitimately fails a gate must be SCORED ZERO, not discarded as a verifier
+# error. Letting pytest set the exit code would turn every honest solver failure
+# into missing data. Skipped entirely when the category has not compiled its
+# rubric tests yet.
+export SCORE_PATH
+if [ -f "$HERE/test_output.py" ]; then
+  PYTEST_OUT="$VDIR/pytest_deterministic.txt"
+  "$PYBIN" -m pytest "$HERE/test_output.py" -q --tb=line -p no:cacheprovider \
+      > "$PYTEST_OUT" 2>&1
+  prc=$?
+  "$PYBIN" - "$SCORE_PATH" "$PYTEST_OUT" "$prc" <<'PYEOF'
+import json, pathlib, re, sys
+score, out, prc = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), int(sys.argv[3])
+try:
+    s = json.loads(score.read_text())
+except Exception:
+    raise SystemExit(0)
+txt = out.read_text() if out.is_file() else ""
+passed = int(m.group(1)) if (m := re.search(r"(\d+) passed", txt)) else 0
+failed = int(m.group(1)) if (m := re.search(r"(\d+) failed", txt)) else 0
+errors = int(m.group(1)) if (m := re.search(r"(\d+) error", txt)) else 0
+s["deterministic_pytest"] = {
+    "passed": passed, "failed": failed, "errors": errors, "returncode": prc,
+    "failed_tests": sorted(set(re.findall(r"\b(test_[A-Za-z0-9_]+)\b", txt)))[:20]
+        if (failed or errors) else [],
+    "note": "recorded, never gating: the reward comes from score.json score alone",
+}
+score.write_text(json.dumps(s, indent=2) + "\n")
+PYEOF
+fi
+
+# Derive the reward from the diagnostic score, then read it back. A candidate
+# that forked a delayed writer to race this is caught by the comparison rather
+# than silently credited. The completion secret arrives on fd 3 (same value as
+# the grade.py invocation) so emit_reward can authenticate the emit() signature.
+"$PYBIN" "$HERE/emit_reward.py" "$SCORE_PATH" "$VDIR" 3<<<"$AUTH"
+
+exit $rc

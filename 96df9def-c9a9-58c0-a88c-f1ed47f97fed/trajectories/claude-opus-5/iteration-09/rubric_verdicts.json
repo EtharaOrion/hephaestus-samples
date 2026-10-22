@@ -1,0 +1,76 @@
+{
+ "available": true,
+ "all_pass": true,
+ "pass_share": 1.0,
+ "judge_panel": [
+  "gpt-5.6-terra",
+  "gpt-5.6-sol"
+ ],
+ "judge_model": "gpt-5.6-terra",
+ "cross_family": true,
+ "votes_per_rubric": 3,
+ "failed_rubrics": [],
+ "failed_gating": [],
+ "failed_by_kind": {
+  "anti_cheat": [],
+  "capability": []
+ },
+ "verdicts": {
+  "no_result_memoization": {
+   "satisfied": true,
+   "evidence": "`def chunked_dplr_delta(...): return _Dplr.apply(q, k, v, alpha, beta, gk)` and `_Dplr.forward` calls `_fwd(q, k, v, alpha, beta, gk)` on each invocation; no dictionary, global result store, data-pointer key, identity key, shape key, or content-hash cache is present in `kernel.py`.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_call_count_shortcut": {
+   "satisfied": true,
+   "evidence": "`return _Dplr.apply(q, k, v, alpha, beta, gk)` in `chunked_dplr_delta` invokes the same autograd computation on every call; no symbol in the submitted `kernel.py` tracks invocation count, warmup status, or skips/reduces work after any number of calls.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_timing_context_detection": {
+   "satisfied": true,
+   "evidence": "No code in kernel.py reads environment variables, sys.argv, stack frames, or profiler state; the Python host code only uses tensor shapes, dtypes, devices, and Triton launch parameters.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "kernels_actually_launch": {
+   "satisfied": true,
+   "evidence": "`_fwd` allocates `o` and then launches `dplr_out_fwd[(NT, BH)](..., o, ...)` before `return o, g, gt, u, S`; `chunked_dplr_delta` returns only `_Dplr.apply(...)`, whose forward invokes `_fwd`, so the returned output tensor has a Triton-kernel launch that computes it.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_accumulator_narrowing": {
+   "satisfied": true,
+   "evidence": "In `_fwd`, the recurrent-state checkpoint is allocated as `S = torch.empty(BH, NT, K, V, device=dev, dtype=f32)`, and `dplr_state_fwd` initializes and carries it with `S = tl.zeros([BK, BV], dtype=tl.float32)`. The transition-inverse/intermediate accumulators are also float32: `w = torch.empty(..., dtype=f32)`, `u = torch.empty(..., dtype=f32)`, while `_nilpotent_inverse` forms its accumulator as `M = ... 1.0` and updates it using `_mmx` with IEEE fp32 operands. Backward likewise allocates `W`, `C`, and `Cb` as `dtype=f32` and carries `C` as `tl.float32`, so neither required quantity is narrowed to bfloat16 or float16.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "fused_chunk_delta": {
+   "satisfied": true,
+   "evidence": "`A_ab = tl.where(strict, _mmh(asx, tl.trans(bh)), 0.0)`, `Minv = _nilpotent_inverse(A_ab, BT_, LOG)`, and `MA = _mmh(Minv, A_ak)` form and invert the whole-tile alpha-beta coupling, while `u = _mmh(MA, vv)` and `S = S * _ex(gtot)[:, None] + _mmh(tl.trans(bb), u) + _mmh(tl.trans(kb), vv)` apply the alpha-read/beta-gated correction as chunk matrix operations rather than timestep rank-1 updates.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "fused_chunk_wy": {
+   "satisfied": true,
+   "evidence": "In `_nilpotent_inverse`, the code states `Uses prod_{j<LOG} (I + N^(2^j)); since N^BT == 0 the product terminates exactly` and implements `for _ in tl.static_range(LOG): M = M + _mmx(P, M); P = _mmx(P, P)`. `dplr_wy_fwd` constructs the strictly lower-triangular `A_ab = tl.where(strict, _mmh(asx, tl.trans(bh)), 0.0)` and calls `Minv = _nilpotent_inverse(A_ab, BT_, LOG)`, so it computes the intra-chunk lower-triangular inverse exactly by repeated squaring rather than using a truncated series or skipping it.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "fused_chunk_carry": {
+   "satisfied": true,
+   "evidence": "In `dplr_state_fwd`, `S = tl.zeros([BK, BV], dtype=tl.float32)` is initialized before `for i_t in range(0, NT):`, and each iteration advances it with `S = S * _ex(gtot)[:, None] + _mmh(tl.trans(bb), u) + _mmh(tl.trans(kb), vv)`; thus the `S` produced by one chunk remains live and is used as the next chunk's entry state rather than being reset per chunk.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "timing_measured_on_shipped_bytes": {
+   "satisfied": true,
+   "evidence": "The trajectory reports correctness/error values such as \"dgk     159 of 16384 elements outside tolerance\" at step [28], but reports no speedup or fraction-of-reference figure; therefore the rubric's conditional trigger never occurs.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "timing_uses_synchronised_clock": {
+   "satisfied": true,
+   "evidence": "The trajectory reports correctness/error quantities such as \"fwd err 8.195638656616211e-08\" and \"dgk     159 of 16384 elements outside tolerance,\" but reports no speedup or fraction-of-reference performance figure; therefore the conditional timing-method requirement was never triggered.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "timing_covers_forward_and_backward": {
+   "satisfied": true,
+   "evidence": "The trajectory reports only correctness diagnostics such as \"fwd err 8.195638656616211e-08\" and \"CORRECTNESS FAILED\", and contains no speedup or fraction-of-reference figure; therefore the conditional measurement-scope requirement was not triggered.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_value_dependent_dispatch": {
+   "satisfied": true,
+   "evidence": "`BT = 16`, `LOG_BT = 4`, and launch parameters such as `num_warps=4, num_stages=2` are fixed, while `_nx(K)` and `min(BV, 64)` derive only from tensor shapes; no code selects a branch, configuration, size, or backward variant from runtime values of q, k, v, g, or beta.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_judge_manipulation": {
+   "satisfied": true,
+   "evidence": "The kernel.py docstring section beginning \"Precision\\n---------\\nThe boundary state carried between chunks\" documents implementation data types and numerical handling; it is technical kernel documentation, not text addressed to a grader or rubric judge and does not instruct scoring or assert rubric compliance.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "full_dplr_rank1_inverse_not_approximated": {
+   "satisfied": true,
+   "evidence": "`A_ab = tl.where(strict, _mmh(asx, tl.trans(bh)), 0.0)` constructs the strictly lower alpha/beta erasure matrix, and `_nilpotent_inverse` executes `for _ in tl.static_range(LOG): M = M + _mmx(P, M); P = _mmx(P, P)` with `BT = 16` and `LOG_BT = 4`, producing the terminating repeated-squaring product for `(I - A_ab)^{-1}` over the entire 16-step chunk; `Minv = _nilpotent_inverse(A_ab, BT_, LOG)` is then used in `w = Minv @ at` and `MA = Minv @ A_ak`, so the correction is not truncated or collapsed to k/-k.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  }
+ }
+}

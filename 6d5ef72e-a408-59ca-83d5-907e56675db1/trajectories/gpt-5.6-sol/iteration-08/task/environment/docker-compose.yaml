@@ -1,0 +1,24 @@
+# GENERATED SECTION. DO NOT HAND-EDIT. Source of truth: solution/grounding.yaml
+# Harbor merges this over its own build compose. task.toml declares gpus = 1, but
+# Harbor's docker backend does not translate that into a device request, so the
+# reservation is made explicitly and stays scoped to this task rather than
+# changing the host's default runtime. Without it the graded denominator cannot
+# run at all: this operator is a CUDA kernel and there is nothing to time on CPU.
+services:
+  main:
+    # Build context is the bundle root, not environment/. Without this the
+    # Dockerfile can only COPY files sitting inside environment/, which forced a
+    # duplicate of every agent-visible file. Those duplicates were stale by
+    # construction: recompute.py regenerates instruction.md and bench.py at the
+    # ROOT, so the moment grounding.yaml changed, the image would have been built
+    # from the old copies while the bundle showed the new ones.
+    build:
+      context: ..
+      dockerfile: environment/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

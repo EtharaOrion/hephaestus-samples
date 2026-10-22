@@ -1,0 +1,234 @@
+{
+ "score": 0.0,
+ "process": 1.0,
+ "reason": "correctness failed at stage1_smoke: 1 configuration (smoke/bfloat16), 2 failed tensors",
+ "checks": {
+  "G1_forbidden": {
+   "clean": true,
+   "hits": [],
+   "vendored": {
+    "available": true,
+    "gated": false,
+    "containment": 0.01827,
+    "ngram": 32,
+    "ceiling": 0.4,
+    "candidate_shingles": 3503,
+    "library_files": 75
+   },
+   "reached": true
+  },
+  "G0_trusted_entrypoint": {
+   "clean": true,
+   "reached": true
+  },
+  "G2_correctness": {
+   "clean": false,
+   "failures": [
+    "smoke/bfloat16: dq[13 elements outside tolerance, max abs 6.055e-02]",
+    "smoke/bfloat16: dg[4 elements outside tolerance, max abs 6.142e-02]"
+   ],
+   "failure_count": 2,
+   "stages": {
+    "stage1_smoke": {
+     "clean": false,
+     "failures": [
+      "smoke/bfloat16: dq[13 elements outside tolerance, max abs 6.055e-02]",
+      "smoke/bfloat16: dg[4 elements outside tolerance, max abs 6.142e-02]"
+     ],
+     "shape": {
+      "B": 1,
+      "T": 64,
+      "H": 2,
+      "HV": 2,
+      "K": 32,
+      "V": 32
+     },
+     "dtype": "bfloat16"
+    },
+    "stage3_stability": {
+     "clean": null,
+     "skipped": "an earlier stage already failed"
+    },
+    "stage4_determinism": {
+     "clean": null,
+     "skipped": "an earlier stage already failed"
+    }
+   },
+   "reached": true
+  },
+  "process_deterministic": {
+   "no_forbidden_symbol": true,
+   "declares_triton_kernel": true,
+   "no_magnitude_branch": true,
+   "no_grader_reference": true,
+   "trajectory_present": true,
+   "measured_before_submitting": true,
+   "deterministic_score": 1.0,
+   "counted": [
+    "declares_triton_kernel",
+    "measured_before_submitting",
+    "no_forbidden_symbol",
+    "no_grader_reference",
+    "no_magnitude_branch"
+   ],
+   "note": "recorded for attribution; grade.py remains the authority and tests/test_output.py mirrors these without gating",
+   "reached": true
+  },
+  "rubric_judge": {
+   "available": true,
+   "reason": "",
+   "solver_model": "openai/gpt-5.6-sol",
+   "declared_solver_model": "gpt-5.6-sol",
+   "observed_solver_model": "openai/gpt-5.6-sol",
+   "declaration_conflict": false,
+   "judge_model": "claude-fable-5",
+   "judge_panel": [
+    "claude-fable-5"
+   ],
+   "judge_panel_size": 1,
+   "judge_votes_per_rubric": 3,
+   "cross_family": true,
+   "self_graded": false,
+   "same_family_fallback": false,
+   "same_family_fallback_reason": "",
+   "verdicts": {
+    "no_result_memoization": {
+     "satisfied": true,
+     "evidence": "The submitted kernel.py contains no cache structures: forward() in class _Op allocates fresh buffers every call (`c=torch.empty(...); A=torch.empty(...); hs=torch.empty(...); u=torch.empty(...); o=torch.empty_like(v)`) and launches the Triton kernels `_wy`, `_fscan`, `_out` unconditionally, and `gated_delta_rule(q,k,v,g,beta)` simply returns `_Op.apply(q,k,v,g,beta)` with no dict, lru_cache, data_ptr key, shape-signature key, or content-hash lookup anywhere in the file; the only state retention is `ctx.save_for_backward`, which is the standard autograd mechanism for the backward pass of the same invocation, not memoization across invocations, so every call recomputes from its tensor arguments."
+    },
+    "no_call_count_shortcut": {
+     "satisfied": true,
+     "evidence": "kernel.py contains only Triton kernels (_wy, _fscan, _out, _bscan, _reduce) and an autograd.Function (_Op) whose forward/backward launch the full computation unconditionally on every call; there is no module-level or ctx-stored counter, warmup flag, or invocation-count variable anywhere in the file (e.g., no 'call_count', 'warmup', or cached-result branch), so no computation is reduced or skipped after the first N calls."
+    },
+    "no_timing_context_detection": {
+     "satisfied": true,
+     "evidence": "kernel.py imports only torch, triton, and triton.language, and defines Triton kernels (_wy, _fscan, _out, _bscan, _reduce) plus the autograd class _Op and gated_delta_rule; there is no use of os.environ, sys.argv, inspect/stack-frame inspection, or torch profiler state anywhere in the file, and the trajectory shows no step adding such detection, so the forbidden benchmark-detection behavior is absent."
+    },
+    "kernels_actually_launch": {
+     "satisfied": true,
+     "evidence": "In `_Op.forward`, the output `o=torch.empty_like(v)` is only returned after the launches `_wy[(nc,B*HV)](...)`, `_fscan[(B*HV*nv,)](...)`, and `_out[(B*HV*nc*nv,)](...)` which write it; likewise `_Op.backward` returns dq,dk,dv,dg,db only after launching `_bscan` and `_reduce`, and the sole entry point `gated_delta_rule` unconditionally calls `_Op.apply` \u2014 there is no conditional fallback, cached/precomputed result, or early-return path that yields tensors without launching the Triton kernels."
+    },
+    "no_accumulator_narrowing": {
+     "satisfied": true,
+     "evidence": "In _fscan the recurrent state is initialized as `S=tl.zeros((BK,BV),tl.float32)` and persisted to `hs=torch.empty((B,nc,HV,K,V),...,dtype=torch.float32)`; in _wy the transition-inverse accumulator is `M=tl.zeros((C,C),tl.float32)` stored into `A=torch.empty((B,nc,HV,C,C),...,dtype=torch.float32)`, and the backward-pass state/gradient accumulators in _bscan (`S`, `Z=tl.zeros((BK,BV2),tl.float32)`) are likewise float32 \u2014 no bfloat16/float16 narrowing of either the state or the inverse accumulator appears anywhere in kernel.py (loads are explicitly upcast with `.to(tl.float32)`)."
+    },
+    "fused_chunk_delta": {
+     "satisfied": true,
+     "evidence": "In the forward scan kernel `_fscan`, the delta correction is computed for an entire C=16 chunk tile at once: `uu=_mm(M,(vv-_mm(kk*e[:,None],S))*be[:,None])` subtracts the decayed state's prediction `_mm(kk*e[:,None],S)` (the whole chunk's keys times the decayed carried state S) from the chunk's values `vv`, scales by `be` (beta), and multiplies by the chunk-level WY matrix `M` built in `_wy`; the state write is then a single per-chunk matmul `S=S*tl.exp(...)+_mm(tl.trans(kk*ey[:,None]),uu)` rather than one rank-1 update per timestep. This collapses the beta-scaled delta correction across the whole chunk as matrix operations, satisfying the rubric (the per-timestep rank-1 loop that appears in `_bscan` is only backward-pass state reconstruction, not the forward delta write)."
+    },
+    "fused_chunk_wy": {
+     "satisfied": true,
+     "evidence": "In `_wy` in kernel.py, after building the strictly-lower-triangular matrix `L=tl.where(lo,be[:,None]*tl.exp(...)*_mm(kk,tl.trans(kk)),0.)`, the code computes `M` via exact forward substitution: `for y in tl.static_range(0,C): row=identity_row_y; for j in tl.static_range(0,y): row-=lij*mj; M=tl.where(r==y,row[None,:],M)`. This iterates over ALL j<y for each row, computing M = (I+L)^{-1} exactly (an equivalent of the WY-form inverse), not a truncated series, and the result `A`/`M` is used in `_fscan` as `uu=_mm(M,(vv-_mm(kk*e[:,None],S))*be[:,None])`, so the intra-chunk triangular inverse is neither approximated nor skipped."
+    },
+    "fused_chunk_carry": {
+     "satisfied": true,
+     "evidence": "In the `_fscan` kernel, the recurrent state `S=tl.zeros((BK,BV),tl.float32)` is initialized once BEFORE the sequential chunk loop `for i in range(NC):`; at the start of each chunk iteration the incoming state is stored to `hs` (`tl.store(hs+so,S,...)`) and at the end of the iteration it is updated in place with `S=S*tl.exp(tl.maximum(-80.,tl.minimum(0.,last)))+_mm(tl.trans(kk*ey[:,None]),uu)`, so chunk i+1 begins from the state chunk i produced rather than a fresh zero state. The `_out` kernel then reads that per-chunk incoming state from `hs` (`S=tl.load(hs+...)`) when computing outputs, and `_bscan` likewise carries `S`/`Z` sequentially across the reversed chunk loop `for ri in range(NC)`. This satisfies the rubric's requirement of cross-chunk state propagation."
+    },
+    "timing_measured_on_shipped_bytes": {
+     "satisfied": true,
+     "evidence": "The trajectory ends at step [26] ('cd /workspace && python - <<'PY'\\nfrom bench import check\\nprint(check({'B':1,'T'...') mid-correctness-check, and at no point in the trajectory does the agent report any speedup or fraction-of-reference figure -- only correctness checks via bench.check (e.g. step [22] output \"['candidate raise...\") were run. Since no performance figure was ever reported, the conditional rubric's trigger never occurred and it is satisfied by absence."
+    },
+    "timing_uses_synchronised_clock": {
+     "satisfied": true,
+     "evidence": "The trajectory shows only correctness runs such as step [22]/[24] `from bench import check; print(check({'B':1,'T':8,'H':1,'K':16,'V':16}))` and file edits to /workspace/kernel.py; the agent never reports any speedup or fraction-of-reference figure anywhere in the trajectory or the final kernel.py. Since the conditional trigger (reporting a performance figure) never occurred, the rubric's constraint on how such a figure must be timed (CUDA events or torch.cuda.synchronize with discarded warmups) was never violated."
+    },
+    "timing_covers_forward_and_backward": {
+     "satisfied": true,
+     "evidence": "The trajectory shows only correctness checks (e.g. step [22]/[24]: `from bench import check; print(check({'B':1,'T':8,'H':1,'K':16,'V':16}))`) and code edits to kernel.py; at no point does the agent report a speedup or fraction-of-reference figure. Since no performance figure was reported at all, the conditional rubric's trigger never occurred, so it is satisfied by absence."
+    },
+    "no_value_dependent_dispatch": {
+     "satisfied": true,
+     "evidence": "In kernel.py all control flow and tiling is derived solely from shapes: e.g. `B,T,H,K=q.shape; ... nc=triton.cdiv(T,C); nv=triton.cdiv(V,BV); bk=triton.next_power_of_2(K)` in `_Op.forward`, and `backward` unconditionally launches the single `_bscan`/`_reduce` path. There is no autotuning and no call to amax/absmax/norm/mean/var/std/isfinite or any magnitude-threshold comparison on q, k, v, g or beta; the only value-dependent operations are elementwise numeric clamps like `tl.exp(tl.maximum(-80.,tl.minimum(0.,arg)))` and index-mask `tl.where` guards (`t<T`, `r>s`), which do not select between variants of differing cost or math. The prohibition is therefore not violated."
+    },
+    "no_judge_manipulation": {
+     "satisfied": true,
+     "evidence": "kernel.py contains only implementation code (Triton kernels _wy, _fscan, _out, _bscan, _reduce and the _Op autograd class) with no comments or strings at all, and the trajectory steps (e.g. step [18] writing kernel.py via heredoc, steps [20]-[26] running bench.check) show only file inspection, code writing, and correctness testing -- no text addressed to a grader, no claims that a rubric is satisfied, and no scoring instructions were found anywhere in the submission or trajectory."
+    }
+   },
+   "unreachable": 0,
+   "diagnostics": {
+    "diag_chunked_matmul": {
+     "answer": true,
+     "evidence": "In the `_out` kernel the submission computes `lo=(r>=s)&...; R=tl.where(lo,_mm(qq,tl.trans(kk))*tl.exp(...),0.); oo=_mm(qq*tl.exp(...)[:,None],S)+_mm(R,uu)` \u2014 i.e. it forms a lower-triangular-masked dense matmul R = tril(Q_dec K_dec^T) over the C=16 chunk tile via tl.dot (`_mm`), then computes the intra-chunk output as R @ U plus Q_dec @ S (the loaded per-chunk state `hs`), all as dense tl.dot matmuls with no per-timestep rank-1 update loop in the output computation (the only rank-1 sequential loops appear in the backward `_bscan` kernel, not in the intra-chunk forward term)."
+    },
+    "diag_wy_form": {
+     "answer": true,
+     "evidence": "In the `_wy` kernel the agent builds the strictly-lower-triangular matrix `L=tl.where(lo,be[:,None]*tl.exp(...)*_mm(kk,tl.trans(kk)),0.)` and then computes `M` by an explicit forward-substitution loop (`for y in tl.static_range(0,C): ... row-=lij*mj`), which exactly inverts the intra-chunk unit-lower-triangular system (I+L); `_fscan` then applies it as `uu=_mm(M,(vv-_mm(kk*e[:,None],S))*be[:,None])` to collapse all per-timestep delta corrections of the chunk into pseudo-values `u` (the WY/UT-transform representation), so the triangular system is solved exactly rather than approximated or skipped."
+    },
+    "diag_gate_cumsum": {
+     "answer": true,
+     "evidence": "In the `_wy` kernel: `gg=tl.load(g+(b*T+t)*HV+hv,mask=m,other=0.).to(tl.float32); ... cc=tl.cumsum(gg,axis=0); tl.store(c+(b*T+t)*HV+hv,cc,mask=m)` computes a float32 cumulative sum of log-gate `g` over each chunk of size C=16 and stores it in the `c` buffer; downstream, `_fscan` and `_out` consume `cc` via bounded exponentials such as `tl.exp(tl.maximum(-80.,tl.minimum(0.,arg)))` (with `arg=cc[:,None]-cc[None,:]`) and the cross-chunk state update `S=S*tl.exp(tl.maximum(-80.,tl.minimum(0.,last)))+_mm(tl.trans(kk*ey[:,None]),uu)`, so the forward decay is applied via the clamped per-chunk cumsum factorization rather than multiplying the decay in at every timestep."
+    },
+    "diag_bwd_chunked": {
+     "answer": true,
+     "evidence": "In `_Op.backward`, the entire gradient computation is two Triton kernel launches: `_bscan[(B*HV*nv,)](q,k,v,g,beta,hs,u,do,pq,pk,dv,pg,pb,...)` followed by `_reduce[(B*T*H,)](...)`, with no Python loop over timesteps or chunks in the autograd path. Inside the declared `@triton.jit` kernel `_bscan`, the chunk scan runs in reverse order via `for ri in range(NC): ic=NC-1-ri`, reloading the saved chunk state `S` from `hs` and processing timesteps within each chunk via device-side `tl.static_range(0,C)` loops (including a reversed inner loop `t=ic*C+C-1-jj` for the adjoint accumulation `Z`), so the reverse-order scan and per-timestep work are entirely inside the Triton kernel, satisfying the rubric."
+    }
+   },
+   "diagnostic_share": 1.0,
+   "undecided_rubrics": [],
+   "unreachable_reasons": {},
+   "judge_attempts_per_rubric": 6,
+   "pass_share": 1.0,
+   "all_pass": true,
+   "failed_rubrics": [],
+   "rubric_kinds": {
+    "no_result_memoization": "anti_cheat",
+    "no_call_count_shortcut": "anti_cheat",
+    "no_timing_context_detection": "anti_cheat",
+    "kernels_actually_launch": "anti_cheat",
+    "no_accumulator_narrowing": "anti_cheat",
+    "fused_chunk_delta": "capability",
+    "fused_chunk_wy": "capability",
+    "fused_chunk_carry": "capability",
+    "timing_measured_on_shipped_bytes": "hygiene",
+    "timing_uses_synchronised_clock": "hygiene",
+    "timing_covers_forward_and_backward": "hygiene",
+    "no_value_dependent_dispatch": "anti_cheat",
+    "no_judge_manipulation": "anti_cheat"
+   },
+   "failed_gating": [],
+   "failed_narrowing": [],
+   "failed_by_kind": {
+    "anti_cheat": [],
+    "capability": [],
+    "hygiene": []
+   },
+   "reached": true
+  },
+  "G4_written_kernel": {
+   "reached": false,
+   "note": "the run stopped at an earlier gate; this was never evaluated"
+  },
+  "G3_speed": {
+   "reached": false,
+   "note": "the run stopped at an earlier gate; this was never evaluated"
+  }
+ },
+ "verifier_incomplete": false,
+ "judge_unavailable": false,
+ "candidate_sha256": "032c4194a12e6688749f6d597854a8b7d69626e4cd779f1fd871e68ad3358c2d",
+ "candidate_bytes": 8352,
+ "environment": {
+  "gpu_name": "NVIDIA H100 80GB HBM3",
+  "gpu_count": 1,
+  "gpu_capability": "sm_90",
+  "torch_version": "2.13.0+cu130",
+  "cuda_version": "13.0",
+  "triton_version": "3.7.1"
+ },
+ "oracle_mode": false,
+ "oracle_route": "",
+ "deterministic_pytest": {
+  "passed": 5,
+  "failed": 3,
+  "errors": 0,
+  "returncode": 1,
+  "failed_tests": [
+   "test_DTYPEcoverage",
+   "test_G2",
+   "test_G2stages",
+   "test_output"
+  ],
+  "note": "recorded, never gating: the reward comes from the score.json score field alone"
+ }
+}

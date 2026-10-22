@@ -1,0 +1,72 @@
+{
+ "available": true,
+ "all_pass": true,
+ "pass_share": 1.0,
+ "judge_panel": [
+  "gpt-5.6-sol"
+ ],
+ "judge_model": "gpt-5.6-sol",
+ "cross_family": true,
+ "votes_per_rubric": 3,
+ "failed_rubrics": [],
+ "failed_gating": [],
+ "failed_by_kind": {
+  "anti_cheat": [],
+  "capability": [],
+  "hygiene": []
+ },
+ "verdicts": {
+  "no_result_memoization": {
+   "satisfied": true,
+   "evidence": "The entry point `gated_delta_rule` always calls `_GatedDeltaRule.apply(q, k, v, g, beta)`, whose `forward` unconditionally invokes `_launch_fwd(q, k, v, g, beta)` and allocates fresh intermediate/output tensors with `torch.empty`; there is no cache, memoization table, or lookup keyed by data pointer, tensor identity, shape, or content."
+  },
+  "no_call_count_shortcut": {
+   "satisfied": true,
+   "evidence": "The public entry point is `return _GatedDeltaRule.apply(q, k, v, g, beta)`, and `_GatedDeltaRule.forward` always calls `_launch_fwd(...)` while `backward` always calls `_launch_bwd(...)`; no call-count, warmup, or invocation-counter state or conditional computation-skipping logic appears in `kernel.py`."
+  },
+  "no_timing_context_detection": {
+   "satisfied": true,
+   "evidence": "The submitted kernel.py imports only `torch`, `triton`, and `triton.language` and contains no access to environment variables, `sys.argv`, stack frames, or profiler state; `_cfg`, `_launch_fwd`, and `_launch_bwd` configure execution solely from tensor shapes, dtypes, and devices."
+  },
+  "kernels_actually_launch": {
+   "satisfied": true,
+   "evidence": "`def gated_delta_rule(...): return _GatedDeltaRule.apply(q, k, v, g, beta)`, whose `forward` calls `_launch_fwd(...)`; `_launch_fwd` launches `_cumsum_kernel`, `_wy_kernel`, `_fwd_scan_kernel`, and `_out_kernel` before returning `o`, while `backward` calls `_launch_bwd(...)`, which launches the backward Triton kernels before returning gradients. No output-returning fallback or bypass path is present."
+  },
+  "no_accumulator_narrowing": {
+   "satisfied": true,
+   "evidence": "`b_S = tl.zeros([BK, BV], dtype=tl.float32)` declares the recurrent state accumulator in float32 and `b_S = b_S * b_eA + tl.dot(...)` accumulates into it at that precision; the `.to(CT)` casts apply to the operands handed to `tl.dot`, which is the tensor-core input dtype, not the accumulator. The chunk-boundary state buffer is allocated `h = torch.empty(B, HV, NT, K, V, dtype=torch.float32)`, so the state carried across chunk boundaries is float32 end to end."
+  },
+  "fused_chunk_delta": {
+   "satisfied": true,
+   "evidence": "\u201cb_N = tl.where(low, -(b_beta[:, None] * gm * b_kk), 0.0)\u201d; \u201cb_R = tl.where(o_t[:, None] == o_t[None, :], 1.0, 0.0) + b_N\u201d; \u201cfor _ in tl.static_range(5): b_Y = tl.dot(b_Y, b_Y, input_precision=\"tf32\"); b_R = b_R + tl.dot(b_R, b_Y, input_precision=\"tf32\")\u201d; \u201cb_u0 = tl.dot(b_Rc, (b_beta[:, None] * b_v).to(b_k.dtype), input_precision=PREC)\u201d; \u201cb_w = tl.dot(b_Rc, b_kb, input_precision=PREC)\u201d; and \u201cb_u = b_u0 - tl.dot(b_w, b_S.to(CT), input_precision=PREC)\u201d \u2014 `_wy_kernel` constructs and applies a BT\u00d7BT triangular inverse containing the beta-scaled, decay-weighted key interactions, while `_fwd_scan_kernel` subtracts the entering decayed state\u2019s key prediction from all BT writes with one matrix multiplication per chunk rather than rank-1 updates per timestep."
+  },
+  "fused_chunk_wy": {
+   "satisfied": true,
+   "evidence": "In `_wy_kernel`, the code constructs the strictly lower-triangular nilpotent matrix `b_N = tl.where(low, -(b_beta[:, None] * gm * b_kk), 0.0)`, initializes `b_R = I + b_N`, and performs `for _ in tl.static_range(5): b_Y = tl.dot(b_Y, b_Y, ...); b_R = b_R + tl.dot(b_R, b_Y, ...)`; for `BT = 64`, this forms `(I+N)(I+N^2)(I+N^4)(I+N^8)(I+N^16)(I+N^32) = sum_{j=0}^{63} N^j = (I-N)^{-1} = (I+T)^{-1}` because `N=-T` is strictly lower triangular and `N^64=0`, so it computes the full intra-chunk triangular inverse rather than a truncated approximation."
+  },
+  "fused_chunk_carry": {
+   "satisfied": true,
+   "evidence": "In `_fwd_scan_kernel`: `b_S = tl.zeros([BK, BV], dtype=tl.float32)` is initialized once before `for i_t in range(NT):`, and inside that loop the kernel computes `b_u = b_u0 - tl.dot(b_w, b_S.to(CT), ...)` followed by `b_S = b_S * b_eA + tl.dot(tl.trans(b_kd), b_u.to(CT), ...)`; thus the updated `b_S` from each chunk remains live and is used as the entering recurrent state for the next chunk rather than being reset."
+  },
+  "timing_measured_on_shipped_bytes": {
+   "satisfied": true,
+   "evidence": "The submitted `kernel.py` reports no speedup or fraction-of-reference figure anywhere in its source or docstrings, so there is no performance claim in the shipped bytes for which a measurement would have to be reproduced."
+  },
+  "timing_uses_synchronised_clock": {
+   "satisfied": true,
+   "evidence": "The submitted `kernel.py` reports no relative-performance figure, so the timing-method requirement is not triggered by the shipped bytes."
+  },
+  "timing_covers_forward_and_backward": {
+   "satisfied": true,
+   "evidence": "Trajectory step [17] reports \u201c(1, 16384, 4, 128, 128) yours 5.320 prod 2.076 frac 0.3902,\u201d while the associated /tmp/s.py snippet in step [18] invokes \u201co = step(gated_delta_rule, inp); gg = grads_of(inp)\u201d (and likewise for the reference), so the reported fraction is based on the benchmark\u2019s step that executes the operation with gradient computation rather than a forward-only call."
+  },
+  "no_value_dependent_dispatch": {
+   "satisfied": true,
+   "evidence": "`def _cfg(q, v): K, V = q.shape[-1], v.shape[-1] ... nbh = q.shape[0] * v.shape[2] ... prec = \"tf32x3\" if q.dtype == torch.float32 else \"tf32\"` and `_launch_bwd` uses `if REP == 1`, where `REP = HV // H`; all configuration, block-size, precision, and backward-path choices depend only on tensor shapes or dtype, not on runtime contents of q, k, v, g, or beta."
+  },
+  "no_judge_manipulation": {
+   "satisfied": true,
+   "evidence": "The kernel\u2019s top-level text, \u201cChunk-parallel gated delta rule: Triton forward and backward,\u201d and its subsequent chunk-algebra description document the implementation; neither kernel.py nor the trajectory contains text addressed to a grader or rubric judge, scoring instructions, or claims that the rubric is satisfied."
+  }
+ }
+}

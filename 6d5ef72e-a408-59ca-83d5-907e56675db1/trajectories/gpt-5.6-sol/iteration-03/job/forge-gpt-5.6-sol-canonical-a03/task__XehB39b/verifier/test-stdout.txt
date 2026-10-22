@@ -1,0 +1,23 @@
+/opt/venv/lib/python3.12/site-packages/torch/_subclasses/functional_tensor.py:368: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /__w/pytorch/pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+/tests/taskdef_api.py:295: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:822.)
+  return bad == 0, f"{bad} elements outside tolerance, max abs {float(d.max()):.3e}"
+Traceback (most recent call last):
+  File "/tests/grade_core.py", line 1359, in run
+    _hard_exit(main())
+               ^^^^^^
+  File "/tests/grade_core.py", line 949, in main
+    inp, gn, scale = draw_inputs(torch, td, spec, seed, dtype)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tests/grade_core.py", line 349, in draw_inputs
+    args, grad_names = make(spec, seed, scale, dtype, "cuda")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tests/taskdef.py", line 228, in make_inputs
+    g = torch.Generator(device=device)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.AcceleratorError: CUDA error: an illegal memory access was encountered
+Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+

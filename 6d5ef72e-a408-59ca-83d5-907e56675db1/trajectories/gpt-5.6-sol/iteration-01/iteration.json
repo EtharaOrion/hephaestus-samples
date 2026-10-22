@@ -1,0 +1,49 @@
+{
+  "index": 1,
+  "outcome": 0.252551,
+  "process": 0.6,
+  "fraction_of_sota": 0.252551,
+  "candidate_sha256": "221eed555d7e3dfd3bcbc6594e24b4d44d3b1d79d7da114c0200313404704ef0",
+  "starter_sha256": "8d8ef78a4eba2c1799eb4b9416aaf5afb71bbac715908ec976ef42c03744c8db",
+  "counts_as_trial": true,
+  "liveness": "graded",
+  "wall_s": 1464.0,
+  "summary": "outcome=0.0000, fraction_of_sota=0.2526, kernel.py digest 221eed555d7e",
+  "trial_dir": ".",
+  "reason": null,
+  "input_tokens": 1136851,
+  "output_tokens": 22725,
+  "cumulative_tokens": 1159576,
+  "started_at": "2026-08-27T10:04:59+0000",
+  "finished_at": "2026-08-27T10:29:23+0000",
+  "prior_summary": "",
+  "mechanical": {
+    "tool_calls": 26,
+    "tools_used": [
+      "finish",
+      "task_tracker",
+      "terminal"
+    ],
+    "edited_editable": true,
+    "never_edited": false,
+    "bench_runs": 5,
+    "never_benchmarked": false,
+    "tool_errors": 0
+  },
+  "narrative": {
+    "available": true,
+    "approach_tried": "Rewrote the starter entirely as a hand-written Triton MoE: fp32 router GEMM + sigmoid, exact integer-key top-A selection with lower-index tie-break, argsort-based sorted-segment dispatch with a per-expert tile table, two grouped expert GEMMs, and nine backward kernels, then swapped the dot precision from IEEE to tf32x3 and enlarged the dispatch tile.",
+    "changes_made": [
+      "kernel.py (whole file rewritten, ~19KB): 17 @triton.jit symbols -- _router_kernel, _weights_kernel, _dispatch_kernel, _prefix_kernel, _tile_position (inlined helper), _expert_in_kernel, _expert_out_kernel, _combine_kernel forward; _dweight_kernel, _router_local_bwd_kernel, _dact_kernel, _activation_bwd_kernel, _dw1_kernel, _dw2_kernel, _dx_pair_kernel, _dx_combine_kernel, _drw_kernel backward",
+      "kernel.py/_select: biased = scores + router_b, signed-zero normalisation, float bits -> monotone int64 key, key = (ordered << 10) | (E-1-expert), torch.topk(..., largest=True, sorted=True) then torch.argsort(sel.flatten(), stable=True) for the permutation",
+      "kernel.py/_dispatch_kernel + _prefix_kernel: builds tok/ws/inv and a per-expert count via tl.atomic_add, then offsets[E+1] and tile_offsets[E+1] = running sum of ceil(count/BM); grid for all grouped GEMMs sized max_tiles = cdiv(T*A,64)+E with _tile_position mapping flat pid -> (expert, row range)",
+      "kernel.py/_drw_kernel signature patched in place (step 9) to take ORDER in addition to TOK so the router-weight gradient gathers sorted rows",
+      "kernel.py: _dx_combine_kernel appended (step 11) to fold dl * router_w[:, sel] back into dx",
+      "kernel.py (step 16): all input_precision=\"ieee\" occurrences after the first replaced by \"tf32x3\", i.e. router dot stays IEEE, every expert/gradient dot becomes 3-pass TF32",
+      "kernel.py (step 20): _prefix_kernel launch changed from BM=32 to a larger tile (num_warps=1 kept)"
+    ],
+    "blocker": "It ran, was correct everywhere, but stayed slow, and the timing shape says exactly why: candidate wall time is essentially dtype-independent (79.8 ms fp32 vs 82.8 ms bf16 on g1; 45.7 vs 48.1 on g2; 40.6 vs 41.5 on g3), so the expert GEMMs never use bf16 tensor cores at all -- everything goes through fp32 operands with input_precision=\"tf32x3\", which is a 3-pass emulated dot. Against an fp32 SOTA that costs ~0.57 of parity, but against a bf16 SOTA that is 5-10x faster than its own fp32 number the same kernel lands near a tenth. The dominant cost is therefore _expert_in_kernel/_expert_out_kernel plus the backward _dw1/_dw2/_dact/_dx_pair dots all running tf32x3 on upcast operands, with fixed untuned tiles (BM=64 rows, 64-wide N tiles) and no num_stages/num_warps specialisation; the agent also ran out of turns after only three bench runs and one profiler capture, and never reported a per-kernel breakdown.",
+    "next_hypothesis": "Branch the dot precision on input dtype: when x/w1/w2 arrive as bfloat16, keep the A and B operands in bf16 and issue a plain tl.dot with an fp32 accumulator (no tf32x3 3-pass emulation and no upcast-to-fp32 loads) in _expert_in_kernel, _expert_out_kernel, _dact_kernel, _dx_pair_kernel, _dw1_kernel and _dw2_kernel -- the near-identical fp32/bf16 wall times prove the bf16 MMA path is currently unused, and only the router dot needs to stay IEEE fp32 for exact selection.",
+    "tuning_tried": "Grid/tile decomposition actually shipped: router (cdiv(T,32), cdiv(E,32)); weights (T,); dispatch (cdiv(T*A,256),); prefix (1,) with num_warps=1; expert_in (max_tiles, cdiv(F,64)); expert_out (max_tiles, cdiv(D,64)); combine (T, cdiv(D,256)); grouped-GEMM row tile BM=64 with max_tiles = cdiv(T*A,64)+E; backward dw kernels one expert per program looping for k in range(begin, end, BK). Two sweeps were run through ./bench.py: (a) input_precision \"ieee\" everywhere (/tmp/moe.json) vs \"tf32x3\" on all non-router dots (/tmp/moe-tf32x3.json) -- tf32x3 was kept and is what shipped; (b) _prefix_kernel BM=32 vs 64 (/tmp/moe-64.json). Neither bench's printed numbers appear in the transcript, so the magnitude of each delta is unknown; no num_warps or num_stages sweep and no @triton.autotune were attempted, and block sizes 32/64/256 were fixed by hand rather than searched."
+  }
+}

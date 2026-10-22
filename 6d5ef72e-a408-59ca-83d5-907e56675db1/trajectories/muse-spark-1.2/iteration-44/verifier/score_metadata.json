@@ -1,0 +1,316 @@
+{
+  "score": 0.0,
+  "process": 0.228571,
+  "reason": "correctness failed: 4 configurations (g1/float32 scale=2.432, g2/float32 scale=1.451, g3/float32 scale=1.573 and 1 more), 4 failed tensors",
+  "checks": {
+    "G1_forbidden": {
+      "clean": true,
+      "hits": [],
+      "vendored": {
+        "available": false,
+        "gated": false,
+        "reason": "no vendor library configured for this category; the forbidden-symbol scan still ran"
+      },
+      "reached": true
+    },
+    "G0_trusted_entrypoint": {
+      "clean": true,
+      "reached": true
+    },
+    "G2_correctness": {
+      "clean": false,
+      "failures": [
+        "g1/float32 scale=2.432: drouter_w[26 elements outside tolerance, max abs 1.355e-01]",
+        "g2/float32 scale=1.451: drouter_w[1 elements outside tolerance, max abs 1.483e-02]",
+        "g3/float32 scale=1.573: drouter_w[8 elements outside tolerance, max abs 1.914e-01] dw1[34 elements outside tolerance, max abs 1.559e-02] dw2[46 elements outside tolerance, max abs 1.701e-02]",
+        "c1/float32 scale=2.053: drouter_w[1 elements outside tolerance, max abs 4.260e-02]"
+      ],
+      "failure_count": 4,
+      "stages": {
+        "stage1_smoke": {
+          "clean": true,
+          "failures": [],
+          "shape": {
+            "T": 1024,
+            "D": 1024,
+            "F": 704,
+            "E": 32,
+            "A": 4
+          },
+          "dtype": "bfloat16"
+        },
+        "stage4_determinism": {
+          "clean": true,
+          "failures": [],
+          "runs": 3,
+          "shape": {
+            "T": 2048,
+            "D": 1024,
+            "F": 704,
+            "E": 64,
+            "A": 4,
+            "tie_pool": 8
+          },
+          "dtype": "bfloat16"
+        },
+        "stage3_stability": {
+          "clean": true,
+          "failures": [],
+          "probes": {
+            "router_saturated": {
+              "verdict": "stable",
+              "tensors_outside_tolerance": 0,
+              "note": "tolerance is recorded here, never gated; see the docstring"
+            },
+            "score_plateau": {
+              "verdict": "stable",
+              "tensors_outside_tolerance": 0,
+              "note": "tolerance is recorded here, never gated; see the docstring"
+            },
+            "x_tiny": {
+              "verdict": "stable",
+              "tensors_outside_tolerance": 0,
+              "note": "tolerance is recorded here, never gated; see the docstring"
+            },
+            "x_huge": {
+              "verdict": "stable",
+              "tensors_outside_tolerance": 3,
+              "note": "tolerance is recorded here, never gated; see the docstring"
+            },
+            "bias_extreme": {
+              "verdict": "stable",
+              "tensors_outside_tolerance": 0,
+              "note": "tolerance is recorded here, never gated; see the docstring"
+            }
+          },
+          "dtype": "bfloat16",
+          "shape": {
+            "T": 1024,
+            "D": 1024,
+            "F": 704,
+            "E": 32,
+            "A": 4
+          },
+          "gates_on": "finiteness and not raising, never tolerance"
+        },
+        "stage2_shape_sweep": {
+          "clean": false,
+          "failures": [
+            "g1/float32 scale=2.432: drouter_w[26 elements outside tolerance, max abs 1.355e-01]",
+            "g2/float32 scale=1.451: drouter_w[1 elements outside tolerance, max abs 1.483e-02]",
+            "g3/float32 scale=1.573: drouter_w[8 elements outside tolerance, max abs 1.914e-01] dw1[34 elements outside tolerance, max abs 1.559e-02] dw2[46 elements outside tolerance, max abs 1.701e-02]"
+          ],
+          "configurations": 6,
+          "dtypes": [
+            "bfloat16",
+            "float32"
+          ],
+          "float32_verified": true
+        },
+        "stage5_edge_cases": {
+          "clean": false,
+          "failures": [
+            "c1/float32 scale=2.053: drouter_w[1 elements outside tolerance, max abs 4.260e-02]"
+          ],
+          "configurations": 8,
+          "note": "non-power-of-two and stress edge cases; never timed"
+        }
+      },
+      "reached": true
+    },
+    "process_deterministic": {
+      "no_forbidden_symbol": true,
+      "declares_triton_kernel": true,
+      "no_magnitude_branch": true,
+      "no_grader_reference": true,
+      "trajectory_present": true,
+      "measured_before_submitting": true,
+      "deterministic_score": 1.0,
+      "counted": [
+        "declares_triton_kernel",
+        "measured_before_submitting",
+        "no_forbidden_symbol",
+        "no_grader_reference",
+        "no_magnitude_branch"
+      ],
+      "note": "recorded for attribution; grade.py remains the authority and tests/test_output.py mirrors these without gating",
+      "reached": true
+    },
+    "rubric_judge": {
+      "available": true,
+      "reason": "",
+      "solver_model": "muse-spark-1.2",
+      "declared_solver_model": "muse-spark-1.2",
+      "observed_solver_model": "",
+      "declaration_conflict": false,
+      "cross_family": true,
+      "verdicts": {
+        "no_result_memoization": {
+          "satisfied": true,
+          "evidence": "`def fused_moe(...): return _FusedMoe.apply(x, router_w, router_b, w1, w2, A)` and `_FusedMoe.forward` freshly executes `s = torch.sigmoid(_MM.apply(xf, rwf))`, `sel = _select_topA(...)`, `_GatherGatherMM.apply(...)`, `_GroupedMM.apply(...)`, and `_Combine.apply(...)` on every invocation; there is no global cache, memo table, or lookup keyed by tensor identity, pointer, shape, or content, while `ctx.save_for_backward(...)` is ordinary per-call autograd state used to compute that call's gradients rather than cross-call reuse."
+        },
+        "no_call_count_shortcut": {
+          "satisfied": true,
+          "evidence": "`def fused_moe(...): return _FusedMoe.apply(x, router_w, router_b, w1, w2, A)` invokes `_FusedMoe` unconditionally on every call, and no invocation counter or call-dependent warmup branch appears in `kernel.py`, so routing and expert work are not reduced, skipped, or altered after any number of calls."
+        },
+        "no_timing_context_detection": {
+          "satisfied": true,
+          "evidence": "`def fused_moe(...): return _FusedMoe.apply(x, router_w, router_b, w1, w2, A)` unconditionally dispatches the same implementation, and kernel.py contains no environment checks, stack inspection, timers, profiler-state queries, or benchmark/grading-run detection."
+        },
+        "kernels_actually_launch": {
+          "satisfied": false,
+          "evidence": "`@triton.jit def _mm_kernel(...)` is declared, but `_mm_launch` calls only `_mm_bf16_kernel[...]`; therefore `_mm_kernel` never launches anywhere in the `fused_moe` routed-MoE path, violating the rubric.  [confirmed by a second sample of gpt-5.6-sol]"
+        },
+        "no_value_dependent_dispatch": {
+          "satisfied": false,
+          "evidence": "In `_GatherGatherMM.forward` and `_GroupedMM.forward`: `counts_list = counts.tolist(); for e in range(E): cnt = counts_list[e]; ... nm = triton.cdiv(cnt, BMg); ... for tm in range(nm): ...` uses the per-expert popularity histogram `counts` to generate a variable number of GEMM work tiles, so execution cost and skipped expert work depend on input routing statistics, violating the rubric.  [confirmed by a second sample of gpt-5.6-sol]"
+        },
+        "no_judge_manipulation": {
+          "satisfied": true,
+          "evidence": "The submission ends with `def fused_moe(...): return _FusedMoe.apply(x, router_w, router_b, w1, w2, A)`, and trajectory step [23] only runs `python bench.py ...`; neither kernel.py nor the trajectory addresses a grader, mentions the rubric, instructs scoring, or argues how the audit should be decided."
+        },
+        "timing_measured_on_shipped_bytes": {
+          "satisfied": true,
+          "evidence": "Trajectory step [21] contains only the raw-latency note \"last best kernel (18ms),\" not a speedup or fraction-of-production figure; no qualifying performance figure was reported, so the rubric\u2019s conditional trigger never occurred."
+        },
+        "timing_uses_synchronised_clock": {
+          "satisfied": true,
+          "evidence": "Trajectory step [21] says, \u201cWrite last best kernel (18ms) content from earlier truncated,\u201d but the agent only invoked the provided benchmark with `python bench.py` in steps [14], [20], and [23]; there is no agent-authored wall-clock timing around an unsynchronized CUDA launch, so no timing-method violation is evidenced."
+        },
+        "timing_covers_forward_and_backward": {
+          "satisfied": true,
+          "evidence": "Trajectory step [21] contains the only timing mention, `# Write last best kernel (18ms) content from earlier truncated`; no visible timing output or timed-region code shows that this 18 ms measurement covered only forward or another partial phase, so there is no evidence that the rubric\u2019s full-forward-plus-backward requirement was violated."
+        },
+        "exact_selection_semantics": {
+          "satisfied": false,
+          "evidence": "In `_select_topA`, `keys = (u << 16) | (E - 1 - e_idx)` stores the shifted float-order key in signed `torch.int64`; for nonnegative biased scores, `u >= 0x80000000`, so `u << 16` becomes negative by signed overflow, while negative biased scores produce nonnegative keys, causing `torch.topk(..., largest=True)` to rank negative scores above nonnegative scores and thus violate exact top-A selection on inputs spanning zero.  [confirmed by a second sample of gpt-5.6-sol]"
+        },
+        "bias_selection_only": {
+          "satisfied": true,
+          "evidence": "`b = s + router_b` followed by `return torch.topk(keys, A, dim=-1, largest=True, sorted=True).indices` in `_select_topA` uses `router_b` only to determine selected expert indices; afterward, `_FusedMoe.forward` computes `s_sel = torch.gather(s, 1, sel)` and `w = s_sel / s_sel.sum(dim=-1, keepdim=True)`, so combine weights are normalized raw sigmoid scores from `s = torch.sigmoid(...)` without bias, while `with torch.no_grad(): sel = _select_topA(...)` and `_FusedMoe.backward` returning `None` in the `router_b` position ensure no gradient is produced for `router_b`."
+        },
+        "deterministic_routing_and_combine": {
+          "satisfied": false,
+          "evidence": "`perm = torch.argsort(flat)` uses the default unstable ordering for duplicate expert IDs, and that arbitrary equal-key order becomes the row order of `x_slice`/`dc_slice` in `_GatherGatherMM.backward` before `dw[e] = _mm_launch(x_slice.t(), dc_slice)`, so floating-point gradient reduction order is not guaranteed to be independent of GPU tie resolution or bitwise identical across calls.  [confirmed by a second sample of gpt-5.6-sol]"
+        },
+        "routing_primitive_scope": {
+          "satisfied": false,
+          "evidence": "In `_Combine.backward`: `dyp = dy_c[t_idx] * w_sorted.unsqueeze(1)`, `flat_yp = yp_c[inv]`, `dy_flat = dy_c[torch.arange(G, device=dy.device)//A]`, and `dw = (flat_yp * dy_flat).sum(dim=1)` perform the combine-gradient gather, multiplication, and reduction with PyTorch framework operations on `[G, D]` expert-output data rather than in a Triton kernel, violating the requirement that combine run in module-declared Triton kernels.  [confirmed by a second sample of gpt-5.6-sol]"
+        },
+        "full_dispatch_no_capacity_drop": {
+          "satisfied": false,
+          "evidence": "In `_combine_fwd_kernel`, the code is `for a in range(160): if a < A:` before loading `INV`, `W`, and `YP`; this hard cap means selected pairs with assignment index `a >= 160` are skipped whenever `A > 160`, violating the requirement that every selected (token, expert) pair be computed without truncation.  [confirmed by a second sample of gpt-5.6-sol]"
+        }
+      },
+      "unreachable": 0,
+      "diagnostics": {
+        "diag_dispatch_strategy": {
+          "answer": true,
+          "evidence": "`flat = sel.reshape(-1); perm = torch.argsort(flat); tok = perm // A; counts = torch.bincount(flat, minlength=E); offs = counts.cumsum(0)` creates expert-sorted assignment segments, while `_GatherGatherMM.forward` builds the explicit per-tile tables `row_starts`, `cnts`, `experts`, `tms`, and `tns`; `_gather_gemm_bf16_kernel` then performs fused token gathering via `tok = tl.load(TOK + rm, ...)` and `a = tl.load(X + tok[:, None] * sX0 + ...)`. Thus dispatch is clearly implemented as sorted per-expert segments with a tile table, with gather fused into the first expert GEMM rather than padded capacity bins or per-expert masked loops."
+        },
+        "diag_tie_handling": {
+          "answer": false,
+          "evidence": "`keys = (u << 16) | (E - 1 - e_idx)` followed by `torch.topk(keys, A, dim=-1, largest=True, sorted=True).indices` in `_select_topA` implements composite integer keys whose low-order field favors lower expert indices on equal biased scores, but trajectory steps `[14]`, `[20]`, and `[23]` only show generic benchmark/correctness runs and provide no specific evidence that the exact-tie shape was tested before submission.  [confirmed by a second sample of gpt-5.6-sol]"
+        },
+        "diag_weight_grad_precision": {
+          "answer": false,
+          "evidence": "`_mm_launch` always invokes `_mm_bf16_kernel`, whose accumulator uses `tl.dot(a_hi, b_hi) + tl.dot(a_hi, b_lo) + tl.dot(a_lo, b_hi)` with fp32 accumulation; weight gradients such as `dw[e] = _mm_launch(x_slice.t(), dc_slice)` therefore use a three-term bf16 hi/lo tensor-core approximation, but the trajectory contains no explicit connection between this choice and the disclosed gradient tolerance\u2014only the later step `[23] correctness ok (... output + 4 gradients)`\u2014so the required tolerance-driven precision rationale is absent.  [confirmed by a second sample of gpt-5.6-sol]"
+        },
+        "diag_router_backward": {
+          "answer": true,
+          "evidence": "`s = torch.sigmoid(_MM.apply(xf, rwf))`; `with torch.no_grad(): sel = _select_topA(s.detach(), router_b.float(), A)`; `s_sel = torch.gather(s, 1, sel)`; `w = s_sel / s_sel.sum(dim=-1, keepdim=True)`; and `gx, grw, gw1, gw2 = torch.autograd.grad(y, (xf, rwf, w1f, w2f), dy.float())` show that `_FusedMoe` treats selection as nondifferentiable while propagating `grw` through normalization, gather, and sigmoid only at selected entries; trajectory step 23 reports `correctness ok (... output + 4 gradients)`, meaning `drouter_w` (`grw`, one of those four gradients) was validated against the benchmark reference along with the output and other gradients."
+        },
+        "diag_measured_before_submit": {
+          "answer": false,
+          "evidence": "After the final kernel write in step [22], step [23] runs `python bench.py 2>&1 | grep -E \\`, but the captured output only shows `correctness ok (...)` lines and no benchmark timing or score; therefore the final bytes were gated for correctness, but there is no specific evidence that any reported performance numbers came from that final run.  [confirmed by a second sample of gpt-5.6-sol]"
+        }
+      },
+      "diagnostic_share": 0.4,
+      "undecided_rubrics": [],
+      "unreachable_reasons": {},
+      "pass_share": 0.5714285714285714,
+      "all_pass": false,
+      "failed_rubrics": [
+        "deterministic_routing_and_combine",
+        "exact_selection_semantics",
+        "full_dispatch_no_capacity_drop",
+        "kernels_actually_launch",
+        "no_value_dependent_dispatch",
+        "routing_primitive_scope"
+      ],
+      "rubric_kinds": {
+        "no_result_memoization": "anti_cheat",
+        "no_call_count_shortcut": "anti_cheat",
+        "no_timing_context_detection": "anti_cheat",
+        "kernels_actually_launch": "anti_cheat",
+        "no_value_dependent_dispatch": "anti_cheat",
+        "no_judge_manipulation": "anti_cheat",
+        "timing_measured_on_shipped_bytes": "hygiene",
+        "timing_uses_synchronised_clock": "hygiene",
+        "timing_covers_forward_and_backward": "hygiene",
+        "exact_selection_semantics": "capability",
+        "bias_selection_only": "capability",
+        "deterministic_routing_and_combine": "capability",
+        "routing_primitive_scope": "capability",
+        "full_dispatch_no_capacity_drop": "capability"
+      },
+      "failed_gating": [],
+      "failed_narrowing": [
+        "deterministic_routing_and_combine",
+        "exact_selection_semantics",
+        "full_dispatch_no_capacity_drop",
+        "kernels_actually_launch",
+        "no_value_dependent_dispatch",
+        "routing_primitive_scope"
+      ],
+      "failed_by_kind": {
+        "anti_cheat": [
+          "kernels_actually_launch",
+          "no_value_dependent_dispatch"
+        ],
+        "capability": [
+          "deterministic_routing_and_combine",
+          "exact_selection_semantics",
+          "full_dispatch_no_capacity_drop",
+          "routing_primitive_scope"
+        ],
+        "hygiene": []
+      },
+      "reached": true
+    },
+    "G4_written_kernel": {
+      "reached": false,
+      "note": "the run stopped at an earlier gate; this was never evaluated"
+    },
+    "G3_speed": {
+      "reached": false,
+      "note": "the run stopped at an earlier gate; this was never evaluated"
+    }
+  },
+  "verifier_incomplete": false,
+  "judge_unavailable": false,
+  "candidate_sha256": "bb4491c1efa2ce71b4fd45d598e05af9ab41fbedd0aa0fecd8aa0960b234f2c1",
+  "candidate_bytes": 18812,
+  "environment": {
+    "gpu_name": "NVIDIA H100 80GB HBM3",
+    "gpu_count": 1,
+    "gpu_capability": "sm_90",
+    "torch_version": "2.13.0+cu130",
+    "cuda_version": "13.0",
+    "triton_version": "3.7.1"
+  },
+  "oracle_mode": false,
+  "oracle_route": "",
+  "deterministic_pytest": {
+    "passed": 5,
+    "failed": 2,
+    "errors": 0,
+    "returncode": 1,
+    "failed_tests": [
+      "test_G2",
+      "test_G2stages",
+      "test_output"
+    ],
+    "note": "recorded, never gating: the reward comes from score.json score alone"
+  }
+}

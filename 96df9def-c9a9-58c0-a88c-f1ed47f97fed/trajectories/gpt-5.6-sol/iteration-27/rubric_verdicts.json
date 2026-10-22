@@ -1,0 +1,81 @@
+{
+ "available": true,
+ "all_pass": false,
+ "pass_share": 0.9285714285714286,
+ "judge_panel": [
+  "claude-opus-5"
+ ],
+ "judge_model": "claude-opus-5",
+ "cross_family": true,
+ "votes_per_rubric": 3,
+ "failed_rubrics": [
+  "fused_chunk_delta"
+ ],
+ "failed_gating": [
+  "fused_chunk_delta"
+ ],
+ "failed_by_kind": {
+  "anti_cheat": [],
+  "capability": [
+   "fused_chunk_delta"
+  ]
+ },
+ "verdicts": {
+  "no_result_memoization": {
+   "satisfied": true,
+   "evidence": "In kernel.py, `_Dplr.forward` allocates fresh output and state buffers on every call (`out = torch.empty_like(v)`, `states = torch.empty((B, T, H, K, V), ...)`) and immediately launches `_forward_chunks`; `chunked_dplr_delta` is a bare wrapper calling `_Dplr.apply(q, k, v, alpha, beta, gk)` with no memo dict, no `functools.lru_cache`, no `data_ptr`/shape/hash keying anywhere in the module (module-level state is limited to the two integer block-size constants `_FWD_BV`/`_BWD_BV`). The only cross-call carryover is `ctx.save_for_backward(...)`, which is standard autograd tensor stashing for the matching backward pass, not a result cache, so every invocation recomputes from its tensor arguments."
+  },
+  "no_call_count_shortcut": {
+   "satisfied": true,
+   "evidence": "kernel.py contains only the constants `_FWD_BV = 32` and `_BWD_BV = 16` as module-level state; `_Dplr.forward` unconditionally launches `_forward_chunks` and `_Dplr.backward` unconditionally launches `_backward_scan` plus `_reduce_v_partials` on every invocation, with no global counter, warmup flag, cache dict, or `if call_count > N` branch anywhere in the file or in the observed trajectory edits, so no computation is skipped after the first N calls."
+  },
+  "no_timing_context_detection": {
+   "satisfied": true,
+   "evidence": "kernel.py imports only `torch`, `triton`, and `triton.language as tl`; there is no `os.environ`, `sys.argv`, `inspect`/`sys._getframe`, or `torch.autograd.profiler`/`torch.cuda` profiler-state access anywhere. The control flow in `_Dplr.forward`, `_Dplr.backward`, and the Triton kernels `_forward_chunks`, `_backward_scan`, and `_reduce_v_partials` depends only on tensor shapes (B, T, H, K, V) and the module-level block constants `_FWD_BV`/`_BWD_BV`, so no benchmark-detection branch exists."
+  },
+  "kernels_actually_launch": {
+   "satisfied": true,
+   "evidence": "In `_Dplr.forward`, `out = torch.empty_like(v)` is returned only after the unconditional launch `_forward_chunks[(triton.cdiv(V, _FWD_BV), B * H)](q, k, v, alpha, beta, gk, out, states, ...)`, and in `_Dplr.backward` the returned `dv` is written by the unconditional `_backward_scan[(nv, B*H)]` launch while `dq, dk, da, db, dg` are written by the unconditional `_reduce_v_partials[(triton.cdiv(n,256),)]` launch; there is no branch, fallback, early return, or torch-only path in kernel.py that produces outputs without launching these Triton kernels."
+  },
+  "no_accumulator_narrowing": {
+   "satisfied": true,
+   "evidence": "In `_forward_chunks` the recurrent state is declared and carried as fp32 (`state = tl.zeros((BK, BV), tl.float32)`, updated via `snap = snap * tl.exp(gj0)[:, None] + kj0[:, None] * vj[None, :] + bj0[:, None] * read0[None, :]`) and materialized into a fp32 buffer allocated in `_Dplr.forward` as `states = torch.empty((B, T, H, K, V), device=q.device, dtype=torch.float32)`; the transition-inverse / WY accumulator `rr` (and its inputs `lab`, `lak`, `ag`, `bg`, `kg`) is built from loads explicitly cast with `.to(tl.float32)` and matmuls forced to `tl.dot(..., input_precision=\"ieee\")`, so no tf32/bf16 narrowing occurs; the backward accumulator is likewise `ds = tl.zeros((BK, BV), tl.float32)` with `partial = torch.zeros(..., dtype=torch.float32)`. No bfloat16/float16 cast of either quantity appears anywhere in kernel.py."
+  },
+  "fused_chunk_delta": {
+   "satisfied": false,
+   "evidence": "In `_forward_chunks` (kernel.py) the state that is actually carried forward and stored is produced by an explicit per-timestep loop: `for j in tl.static_range(0, 16): ... read0 = tl.sum(snap * aj0[:, None], axis=0); snap = snap * tl.exp(gj0)[:, None] + kj0[:, None] * vj[None, :] + bj0[:, None] * read0[None, :]`, with `state = snap` at the end \u2014 i.e. the beta/b-scaled correction against the decayed state (`read0`) is applied as one rank-1 update per timestep rather than collapsed over the chunk tile. The chunk-collapsed alternative `xs` (built from `sc` plus `bj*rj + kj*vj`) is dead code: it is never stored or used. The backward pass `_backward_scan` likewise walks timestep-by-timestep (`for jj in tl.static_range(0, 16)`, per-`t` rank-1 terms `qq[:, None] * dot[None, :]`, `aa[:, None] * dr[None, :]`), and the forward saves a full per-timestep `states` tensor of shape (B, T, H, K, V), confirming a per-step recurrence rather than a chunkwise matrix formulation. Only the intra-chunk output term (`tl.dot(aqb, rr)`) is expressed as chunk matmuls, not the state write itself.  [confirmed by a second sample of claude-opus-5]"
+  },
+  "fused_chunk_wy": {
+   "satisfied": true,
+   "evidence": "In `_forward_chunks`, after building the strictly lower-triangular matrix `lab = tl.where(ot[:, None] > ot[None, :], tl.dot(ag, tl.trans(bg)), 0.)` and the right-hand side `rr = tl.dot(ag, sc) + tl.dot(lak, vv)`, the kernel runs an exact forward-substitution solve: `for j in tl.static_range(1, 16): row = <row j of rr>; lab_row = <row j of lab>; row += tl.sum(tl.where(ot[:, None] < j, lab_row[:, None] * rr, 0.), axis=0); rr = tl.where(ot[:, None] == j, row[None, :], rr)`. Because each row j is accumulated from already-updated rows i < j, this computes rr = (I - tril(ag\u00b7bg\u1d40,-1))^{-1} \u00b7 RHS exactly (the WY-style intra-chunk inverse) with no truncated Neumann/series approximation and no omission; the analogous exact per-row recurrence is also used for the state update loop (`snap = snap*exp(gj0) + kj0\u00b7vj + bj0\u00b7read0`)."
+  },
+  "fused_chunk_carry": {
+   "satisfied": true,
+   "evidence": "In `_forward_chunks`, the recurrent state is created once before the chunk loop (`state = tl.zeros((BK, BV), tl.float32)` outside `for ic in range(tl.cdiv(T, 16))`), each chunk seeds its computation from it (`sc = state * tl.exp(center[:, None])` and `snap = state`), and the loop body ends with `state = snap` after the 16 per-timestep recurrence updates (`snap = snap * tl.exp(gj0)[:, None] + kj0[:, None] * vj[None, :] + bj0[:, None] * read0[None, :]`), so each chunk begins from the state the previous chunk produced rather than a zero reset; the backward pass likewise carries `ds` across chunk iterations in `_backward_scan` (initialized before `for cb in ...` and updated in-place via `ds = ds * eg[:, None] + aa[:, None] * dr[None, :]`)."
+  },
+  "timing_measured_on_shipped_bytes": {
+   "satisfied": true,
+   "evidence": "The visible trajectory ends mid-edit at step [23] ('str_re...') and contains only correctness invocations of `bench.check()` at steps [13], [15], [19], [20] and [22] (default, CHECK_SHAPE_NPOT, and the {'B':2,'T':128,'H':4,'K':64,'V':64} shape); no timing run, speedup ratio, or fraction-of-reference figure for `chunked_dplr_delta` / `_forward_chunks` / `_backward_scan` is ever reported, so the rubric's trigger (reporting such a number) never occurred."
+  },
+  "timing_uses_synchronised_clock": {
+   "satisfied": true,
+   "evidence": "The visible trajectory (steps [4]-[23]) contains only correctness invocations -- `bench.check()`, `bench.check(bench.CHECK_SHAPE_NPOT)`, and `bench.check({'B':2,'T':128,'H':4,'K':64,'V':64})` -- plus edits to `kernel.py`; no timing run, no `time.time()`/CUDA-event measurement, and no speedup or fraction-of-reference number is ever reported. The final `kernel.py` (functions `_forward_chunks`, `_backward_scan`, `_reduce_v_partials`, `chunked_dplr_delta`) likewise contains no benchmarking or timing code. The rubric's trigger (reporting a speedup figure) never occurred, so the conditional constraint is not violated."
+  },
+  "timing_covers_forward_and_backward": {
+   "satisfied": true,
+   "evidence": "The visible trajectory contains only correctness invocations \u2014 steps [13], [15], [19] and [22] run `bench.check(...)` for 'default', 'npot' and the {'B':2,'T':128,'H':4,'K':64,'V':64} shape, plus a max-error comparison against `chunked_dplr_delta_ref` in step [20] \u2014 and the final `kernel.py` (with `_forward_chunks`, `_backward_scan`, `_reduce_v_partials` under `_Dplr`) contains no timing or reporting code; the agent never reported any speedup or fraction-of-reference number, forward-only or otherwise, so the rubric's trigger never occurred."
+  },
+  "no_value_dependent_dispatch": {
+   "satisfied": true,
+   "evidence": "In kernel.py all configuration is fixed or shape-derived: module constants `_FWD_BV = 32` and `_BWD_BV = 16`, `bk = max(16, triton.next_power_of_2(K))` and `nv = triton.cdiv(V, _BWD_BV)` in `_Dplr.forward`/`_Dplr.backward` depend only on tensor shapes (B, T, H, K, V), and launch params (`num_warps`, `num_stages`) are hard-coded; no `amax`/`absmax`/`norm`/`mean`/`var`/`std`/`isfinite` call or magnitude comparison on q, k, v, g or beta appears anywhere, and no autotune decorator is used. The only data-dependent operations are elementwise clamps inside `_forward_chunks` (`tl.exp(tl.maximum(tl.minimum(gm - center, 30.), -30.))`) and masks built purely from index vectors (`ot[:, None] > ot[None, :]`, `mt`, `mk`, `mv`), which do not select between alternatives differing in cost or in the mathematical terms evaluated."
+  },
+  "no_judge_manipulation": {
+   "satisfied": true,
+   "evidence": "kernel.py contains only implementation code \u2014 module constants `_FWD_BV`/`_BWD_BV`, the Triton kernels `_forward_chunks`, `_backward_scan`, `_reduce_v_partials`, the autograd `_Dplr.forward/backward`, and the `chunked_dplr_delta` wrapper \u2014 with no comments, docstrings, or prose of any kind, so there is no text addressed to a grader or arguing rubric satisfaction; likewise the trajectory steps are ordinary engineering actions (inspecting bench.py/reference.py and the installed fla dplr chunk sources, `python -m py_compile kernel.py`, and repeated correctness runs via `bench.check(...)` on default, `CHECK_SHAPE_NPOT`, and {'B':2,'T':128,'H':4,'K':64,'V':64} shapes) with no messages instructing the reader how to score."
+  },
+  "full_dplr_rank1_inverse_not_approximated": {
+   "satisfied": true,
+   "evidence": "In `_forward_chunks` (kernel.py), the strictly-lower-triangular erasure matrix is built over the full 16-row chunk as `lab = tl.where(ot[:, None] > ot[None, :], tl.dot(ag, tl.trans(bg), input_precision=\"ieee\"), 0.)` and then solved exactly by in-place forward substitution over every row of the chunk: `for j in tl.static_range(1, 16): row = <row j of rr>; lab_row = <row j of lab>; row += tl.sum(tl.where(ot[:, None] < j, lab_row[:, None] * rr, 0.), axis=0); rr = tl.where(ot[:, None] == j, row[None, :], rr)`, i.e. rr_j = rhs_j + sum_{i<j} lab[j,i]*rr_i using already-solved rows, which is the exact (I \u00b1 A_ab)^{-1} triangular solve rather than a truncated Neumann/first-order or diagonal-only approximation; the same 16-length index `ot` is used for the ab term and the qk/qb terms so there is no shrunken effective chunk, and `alpha`/`beta` enter as independent tensors `a`/`b` (state update `snap = snap*exp(gj0) + kj0[:,None]*vj[None,:] + bj0[:,None]*read0[None,:]` with `read0 = sum(snap * aj0[:,None])`), so the operator is not collapsed to plain GLA or the Householder delta rule."
+  }
+ }
+}

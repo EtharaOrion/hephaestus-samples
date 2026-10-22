@@ -1,0 +1,84 @@
+schema_version = "1.4"
+
+[task]
+name = "hephaestus/kda_chunk_gdr_fwdbwd"
+version = "1.0.0"
+description = "Implement the chunk-parallel gated delta rule forward and backward for the H100, scored as a saturating fraction of a real production Triton kernel over a hidden shape sweep."
+authors = [{ name = "Ethara.AI Research", email = "research@ethara.ai" }]
+keywords = ["gpu-kernel", "triton", "linear-attention", "optimization", "bounded-continuous"]
+tags = ["optimization", "bounded-continuous"]
+
+[metadata]
+max_timeout_hours = 1.50
+surface = "forward_backward"
+editable_paths = ["kernel.py"]
+max_attempts = 100
+final_selection = "best"
+refinement_loop = "each iteration solves, submits and is graded; the trajectory is summarised and the next iteration starts from that summary carrying every prior approach and its reward"
+sota_anchor = "github.com/fla-org/flash-linear-attention at b4cfd53d646abab93541e82b8068c130de42ac3c"
+difficulty_explanation = "The denominator is a real tuned third-party Triton kernel for the same operator, not eager and not torch.compile. On the measured H100 frontier matrix this operator family sits at 1 to 8 percent of roofline for both declared cohorts, against 25 to 55 percent on published shapes, so the headroom is large and is not reachable by recalling a canonical kernel. The input scale is randomized per invocation and the timed tensors are the checked tensors, which closes the distribution-sniffing route that inflated an audited external run on this exact family by 4.3x."
+artifacts = ["/logs/agent/trajectory.json"]
+
+[metadata.score_schema]
+contract_path = "/logs/verifier/score.json"
+metrics = ["score", "process"]
+score_range = [0.0, 1.0]
+score_full_reward = 1.0
+score_definition = "geomean over hidden shapes of min(production_time/candidate_time,1); 0 unless every gate passes"
+process_range = [0.0, 1.0]
+process_full_reward = 1.0
+aggregation = "single-step"
+
+[agent]
+timeout_sec = 5400.0
+max_timeout_sec = 5400.0
+attempt_cap = 100
+user = "agent"
+# NO INTERNET AT SOLVE TIME, with one exception that is not internet access. The
+# agent reaches its OWN model over this address: the runner passes LLM_BASE_URL
+# pointing at the local bridge on the docker gateway, so a hard no-network agent
+# phase would leave the agent with no model and nothing would run at all. The
+# allowlist is the RFC1918 ranges docker assigns its gateway from -- addresses
+# that are not routable on the public internet, so this cannot become a route out.
+network_mode = "allowlist"
+allowed_hosts = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
+[environment]
+gpus = 1
+gpu_types = ["H100"]
+# NO INTERNET AT SOLVE TIME. The client FAQ answers "Is internet needed only for
+# setup or while we solve the tasks?" with "Only for setup", so the baseline is
+# no-network and every dependency -- torch, triton, einops, pytest, and
+# flash-linear-attention pinned to b4cfd53d -- is installed at IMAGE BUILD time.
+# Nothing in the solve path fetches anything.
+network_mode = "no-network"
+
+[verifier]
+# Same reasoning as [agent]: the rubric judge is an LLM call over the same local
+# bridge. This is grading infrastructure, not part of the solve.
+network_mode = "allowlist"
+allowed_hosts = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+timeout_sec = 7200.0
+# The rubric judge runs inside the verifier and needs the bridge address as seen
+# from the container. SOLVER_MODEL is a FALLBACK ONLY and is deliberately not the
+# authority: a manifest can carry exactly one literal, and this one says gpt, so
+# running the claude cohort against it would have selected claude-opus-5 to judge
+# a claude-opus-5 trajectory. That is a self-grade, and a silent one, because
+# from the outside a self-grade is indistinguishable from a working judge.
+# tests/judge.py therefore recovers the solver identity from the trajectory,
+# which records what actually ran, prefers it over this declaration, reports any
+# conflict, and refuses outright rather than judge within a family.
+env = { SOLVER_MODEL = "gpt-5.6-sol" }
+# SHARED, not separate. Harbor's VerifierConfig documents that with
+# environment_mode="separate" the verifier gets "a fresh copy of the top-level
+# [environment]" -- the agent's edits do not transfer, so a separate verifier
+# structurally cannot grade the candidate. Measured: run kda-smoke-10 died with
+# FileNotFoundError /workspace/kernel.py after the agent had done 30 steps of
+# real work, because the verifier container held a pristine image.
+#
+# The private boundary still holds, and by a stronger mechanism than isolation:
+# Harbor uploads tests/ into the container only for the verifier phase, after
+# the agent phase has ended. The hidden shape set and the target are therefore
+# absent while the agent runs, and no oracle ever enters the container at all.
+environment_mode = "shared"
+user = "root"

@@ -1,0 +1,76 @@
+{
+ "available": true,
+ "all_pass": true,
+ "pass_share": 1.0,
+ "judge_panel": [
+  "gpt-5.6-terra",
+  "gpt-5.6-sol"
+ ],
+ "judge_model": "gpt-5.6-terra",
+ "cross_family": true,
+ "votes_per_rubric": 3,
+ "failed_rubrics": [],
+ "failed_gating": [],
+ "failed_by_kind": {
+  "anti_cheat": [],
+  "capability": []
+ },
+ "verdicts": {
+  "no_result_memoization": {
+   "satisfied": true,
+   "evidence": "`def _fwd(...): ... W = torch.zeros(...); U = torch.zeros(...); ... S = torch.zeros(...)` allocates fresh intermediate tensors on each forward invocation, and `chunked_dplr_delta(...)` directly returns `_Dplr.apply(q, k, v, alpha, beta, gk)` with no cache dictionary, pointer/identity key, shape key, or content-hash lookup; therefore each invocation recomputes from its supplied tensor arguments.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_call_count_shortcut": {
+   "satisfied": true,
+   "evidence": "`def _fwd(...): ... diag_dplr_prep[(NT, BH)](...); diag_dplr_state_scan[(NV, BH)](...); diag_dplr_out[(NT, BH)](...)` always launches the full forward computation, and no symbol in `kernel.py` tracks invocation count, warmup status, or skips work after any number of calls.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_timing_context_detection": {
+   "satisfied": true,
+   "evidence": "No code in kernel.py references environment variables, sys.argv, stack-frame inspection, or profiler/timing state; execution paths such as _fwd and _bwd depend only on tensor inputs and shapes.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "kernels_actually_launch": {
+   "satisfied": true,
+   "evidence": "In `_fwd`, `o = v.new_empty(B, T, H, V)` is followed unconditionally by launches of `diag_dplr_prep[(NT, BH)](...)`, `diag_dplr_state_scan[(NV, BH)](...)`, and `diag_dplr_out[(NT, BH)](..., o, ...)` before `return o, W, Aqk, Aqb, Tm, V2, S`; thus the returned output tensor `o` is passed to and computed by a launched Triton kernel rather than returned through a no-kernel path.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_accumulator_narrowing": {
+   "satisfied": true,
+   "evidence": "`diag_dplr_state_scan` initializes the recurrent state as `S = tl.zeros([BK, BV], dtype=tl.float64)`, and `_fwd` allocates its checkpoint buffer with `S = torch.zeros(..., dtype=torch.float64)`; `_tri_inv` sets `N64 = N.to(tl.float64)`, `P = ... .to(tl.float64) + N64`, and maintains `M` through `_dot64`, so both the recurrent state and transition-inverse accumulator are float32-or-wider rather than bf16/fp16.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "fused_chunk_delta": {
+   "satisfied": true,
+   "evidence": "`A_ab = tl.where(ms, tl.dot(agr, tl.trans(bqr), input_precision=\"ieee\"), 0.0)` forms the strictly lower intra-chunk alpha-beta coupling from `agr` (derived from `b_a`, i.e. `alpha`) and `bqr` (derived from `b_b`, i.e. `beta`), and `Tm = _tri_inv(A_ab, CC, LOGC)` inverts it across the full `CC x CC` chunk tile. In `diag_dplr_state_scan`, `v2 = b_u + tl.sum(b_w.to(tl.float64)[:, :, None] * Sm[None, :, :], 1)` applies the alpha-read chunk result to the carried state, followed by `S = S * ... + (tl.dot(tl.trans(kd), b_v, ...) + tl.dot(tl.trans(bd), v2, ...))`, which performs the beta-gated chunk write rather than a per-timestep rank-1 update.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "fused_chunk_wy": {
+   "satisfied": true,
+   "evidence": "`def _tri_inv(N, CC, LOGC): ... P = ... + N64; M = N64; for _ in tl.static_range(LOGC - 1): M = _dot64(M, M, CC); P = P + _dot64(P, M, CC)` computes `(I-N)^-1` by repeated squaring; for `C = 16` and `LOG_C = 4`, it accumulates all powers through `N^15`, which is the exact finite inverse for strictly lower-triangular nilpotent `A_ab`.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "fused_chunk_carry": {
+   "satisfied": true,
+   "evidence": "In `diag_dplr_state_scan`, `S = tl.zeros([BK, BV], dtype=tl.float64)` is initialized before `for i_t in range(NT):`, each chunk stores the incoming checkpoint with `tl.store(S_o ... , S, ...)`, and then updates the same carry with `S = S * _ex(gl).to(tl.float64)[:, None] + (...)`; therefore chunk `i_t + 1` starts from the state produced by chunk `i_t`, rather than a newly initialized state.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "timing_measured_on_shipped_bytes": {
+   "satisfied": true,
+   "evidence": "The trajectory reports correctness-error figures such as \"out 1.74e-04 dq 1.92e-03\" at step [18], but reports no speedup or fraction-of-reference performance figure; therefore the rubric's conditional trigger never occurred.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "timing_uses_synchronised_clock": {
+   "satisfied": true,
+   "evidence": "The trajectory reports correctness-error figures such as \"out 1.74e-04 dq 1.92e-03\" in step [18], but it reports no speedup or fraction-of-reference performance figure; therefore the conditional timing-measurement requirement was never triggered.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "timing_covers_forward_and_backward": {
+   "satisfied": true,
+   "evidence": "The trajectory reports correctness-error values such as \"out 1.74e-04 dq 1.92e-03\" at step [18], but reports no speedup or fraction-of-reference performance figure; therefore the rubric's conditional timing-scope requirement was never triggered.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "no_value_dependent_dispatch": {
+   "satisfied": true,
+   "evidence": "`C = 16`, `LOG_C = 4`, `BVS = min(BV, 64)` in `_shapes(q, v)`, and fixed launch options such as `num_warps=4, num_stages=2` select chunk/block and kernel configurations solely from constants or tensor dimensions; no code or trajectory step reads runtime contents of `q`, `k`, `v`, `gk`, or `beta` to choose a control-flow branch, autotune configuration, block/chunk size, or backward-path variant.  [PANEL SPLIT, resolved 2-1: gpt-5.6-terra=fail, gpt-5.6-sol=pass, gpt-5.6-terra=pass]"
+  },
+  "no_judge_manipulation": {
+   "satisfied": true,
+   "evidence": "`def chunked_dplr_delta(...): return _Dplr.apply(q, k, v, alpha, beta, gk)` is an implementation entry point and contains no text addressed to a grader or rubric judge, nor any scoring instruction or assertion of rubric compliance.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  },
+  "full_dplr_rank1_inverse_not_approximated": {
+   "satisfied": true,
+   "evidence": "`_tri_inv` defines `P = I + N`, then repeatedly executes `M = _dot64(M, M, CC)` and `P = P + _dot64(P, M, CC)` for `LOGC - 1` iterations; with `C = 16` and `LOG_C = 4`, this constructs `(I+N)(I+N^2)(I+N^4)(I+N^8)=I+N+...+N^15`, the exact inverse of `I-N` for strictly lower-triangular `A_ab`. `diag_dplr_prep` calls `Tm = _tri_inv(A_ab, CC, LOGC)` after forming `A_ab`, so the alpha/beta erasure matrix is inverted over the full 16-row chunk rather than truncated or collapsed.  [agreed by gpt-5.6-sol, gpt-5.6-terra]"
+  }
+ }
+}
