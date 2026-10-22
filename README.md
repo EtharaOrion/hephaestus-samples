@@ -1,117 +1,157 @@
-[![hephaestus banner](images/banner.png)](images/banner.png)
+<p align="center"><img src="images/hero.svg" alt="Project" width="720"></p>
 
-> [![format](https://img.shields.io/badge/format-Harbor-FFD21F)](https://github.com/Ethara-Ai/harbor)
-> ![hardware](https://img.shields.io/badge/hardware-1xH100_offline-10b981)
-> ![surface](https://img.shields.io/badge/surface-Triton_forward%2Bbackward-b06bff)
-> ![bundles](https://img.shields.io/badge/bundles-1_published_%C2%B7_30_planned-ff6b6b)
-> ![score](https://img.shields.io/badge/score-speedup_vs_production-845EF7)
+# Project: samples
 
-Public sample of the hephaestus dataset: promoted Harbor bundles over the hephaestus GPU kernel-optimization environment, one directory per promoted uuid. **One bundle is published here; the release target is 30.** Each bundle is content-addressed and self-contained — pinned image digest, hidden shape set, verifier and oracle travel together.
+<p align="center"><b>The samples lane: 31 of 30 Harbor task bundles.</b></p>
 
-## What hephaestus is
+<p align="center"><a href="#summary"><img src="https://img.shields.io/badge/bundles-31_of_30-845EF7" alt="bundles: 31 of 30"></a> <a href="#evidence-status"><img src="https://img.shields.io/badge/sealed-0-845EF7" alt="sealed: 0"></a> <a href="#difficulty-tiers"><img src="https://img.shields.io/badge/difficulty-measured-845EF7" alt="difficulty: measured"></a></p>
 
-Hephaestus is a verifiable reinforcement-learning environment in which a model is handed a PyTorch reference operator and a deliberately slow starter kernel, and has to turn it into a Triton kernel that matches the reference inside disclosed tolerances and beats the production implementation it is timed against. There is no rubric to argue with and no string to read off: the score is wall-clock device time on one H100, measured against a real vendor-library composition — for the sample bundle, a CUTLASS grouped GEMM via `torch._grouped_mm` — on a hidden shape set the model never sees. The agent works an iterative loop, editing `kernel.py` and running the local harness, for up to 100 attempts inside a 90-minute budget, and only the best submission counts.
+<p align="center"><sub><a href="#abstract">Abstract</a> | <a href="#summary">Summary</a> | <a href="#difficulty-tiers">Difficulty tiers</a> | <a href="#evidence-status">Evidence status</a> | <a href="#coverage">Coverage</a> | <a href="#dataset-structure">Dataset structure</a> | <a href="#verification-and-quality-assurance">Verification and quality assurance</a> | <a href="#reproduction">Reproduction</a> | <a href="#cite">Cite</a> | <a href="#license">License</a> | <a href="#contact">Contact</a></sub></p>
 
-The environment is adversarial by construction. Every obvious shortcut is closed before the model starts: it cannot call the library it is being raced against, it cannot wrap one and claim the time, it cannot tune to the shapes it can see, and it cannot reach the process that writes its reward.
+## Abstract
 
-## Key terms
+The curated lane of this corpus: at most 30 Harbor task bundles, every anchor seated first and every other bundle in seal order. Bundles past that ceiling live in `delivery/`.
 
-- **Bundle**: one self-contained Harbor task, content-addressed from its own material, whose UUID is a hash of the frozen bytes. Trajectories are excluded from that hash, so recording a rollout never changes a bundle's identity.
-- **Production anchor**: the denominator of the score — a real, tuned implementation of the same operator built from vendor libraries. The agent must beat the stack it is forbidden from importing.
-- **Written-kernel gate**: at least 60% of graded forward+backward device time must land inside `@triton.jit` kernels the candidate module itself declares. Kernel names are matched against that declared set and rejected outright if they carry a `cutlass`/`cublas`/`cudnn`/`nvjet` marker or an architecture prefix, so a library call cannot be laundered into a written kernel.
-- **Hidden shape set**: the shapes the score is actually computed on. The agent tunes against a small published set; grading happens on held-out shapes and dtypes, with input magnitudes and expert-popularity priors redrawn per invocation, so a lookup table for the visible shapes is worth nothing.
-- **Oracle**: a from-scratch solution shipped in `solution/`, never staged to the agent, whose only job is to prove full reward is reachable through every live gate. Difficulty is calibrated by a working solve, not by an authored number.
+Each bundle is one Harbor task in a directory named by its content-derived uuid5, so the name doubles as an integrity check. This page is rendered from the resident bundles on every reconcile; a value a bundle does not carry reads `absent`, and the page never fills one in.
 
-## How a bundle is scored
+## Summary
 
-A submission produces one float in `[0, 1]`, and it is **zero unless every gate passes**. The pass/fail gates are settled before a stopwatch is ever started:
+| Property | Value |
+| --- | --- |
+| Bundles | 31 of 30 |
+| Sealed | 0 of 31 |
+| Registrations | unregistered (31) |
+| Audit verdicts | none (31) |
+| Harbor schema | 1.4 (31) |
 
-| Check | What it decides |
-|---|---|
-| `G0_trusted_entrypoint` | The verifier, not the candidate, is the last writer of the reward. |
-| `G1_forbidden` | Forbidden-symbol scan over the comment-stripped source (`torch._grouped_mm`, `vllm`, `sglang`, `grouped_gemm`, `transformer_engine`, `flashinfer`). A near-duplicate containment check against a vendored reference library runs under the same gate for bundles that ship one; this bundle's anchor is a torch builtin, so it records `available: false` and gates nothing here. |
-| `G2_correctness` | Output **and all four gradients** inside the disclosed per-dtype tolerances (`2e-4` fp32, `4.5e-2` bf16) on the hidden shapes, across a five-stage harness — smoke, shape sweep, numerical stability under adversarial inputs, determinism, and non-power-of-two / exact-tie edge cases. |
-| `G4_written_kernel` | Written-kernel adoption ≥ 60%. Deliberately evaluated *before* timing: a library wrapper is disqualified without ever earning a number. |
-| `G3_speed` | Honest timing — CUDA-event clock, discarded warmups, full forward+backward inside the timed region, measured on the shipped bytes. |
-| `process_deterministic` | Recorded and explicitly **non-gating**. A candidate that legitimately fails a gate must be scored zero, not discarded as a verifier error. |
-| `rubric_judge` | The cross-family LLM panel. Asymmetric: it can never raise a score, and a decided rubric failure sets it to zero. |
+## Difficulty tiers
 
-Correctness is measured against the reference within tolerance; bitwise equality is required in only one place — the determinism stage, where the same input is replayed three times and the output plus all four gradients must come back identical to each other.
+Difficulty is measured by the signed pilot alone and never declared in a bundle, so this page states no tier a bundle claims.
 
-`G3_speed` is the measurement, and it only happens if everything above it survived:
+## Evidence status
 
-```
-score = geomean over hidden shapes of  min( production_time / candidate_time , 1 )
-```
+The verdict is the audit outcome recorded at the sealed digest, and `none` means no verdict has landed for that digest yet. Only an authoring run removes a bundle from this lane, so removal waits for the next one.
 
-In plain terms: on each hidden shape the candidate scores production's time divided by its own. Match production and that shape scores `1.0`; take twice as long and it scores `0.5`. Parity is the ceiling — beating production earns nothing extra, because the point is to reach a real vendor implementation, not to overfit past it. The per-shape fractions are combined with a geometric mean, so one catastrophic shape drags the whole score down instead of being averaged away by good ones.
+| uuid | Verdict | Sealed digest | Stream |
+| --- | --- | --- | --- |
+| 002bdccf-0733-5656-890d-ca1e4b407cb5 | none | absent | none |
+| 0748b4fc-02f4-5aa1-b9d2-fa46141bda35 | none | absent | none |
+| 094d4beb-0793-5e6d-afd9-679af6551cb5 | none | absent | none |
+| 0b2c79fa-fb38-5366-ae3d-1befcbb8ba2f | none | absent | none |
+| 0d1e0a1b-58e8-5530-8760-26bcd61a0c2d | none | absent | none |
+| 139ab4c6-b856-50d3-8ca5-099f83fdce34 | none | absent | none |
+| 1e725592-d357-5762-8232-30aee3eebcad | none | absent | none |
+| 1e769a2b-b0a9-58c2-88e1-af078f24e836 | none | absent | none |
+| 34b7f25c-7a7d-5b45-a108-e8e3b9f2201a | none | absent | none |
+| 3924bf78-78b8-54c3-9e8f-fd3c2333c1a3 | none | absent | none |
+| 3b94b44f-a20f-5b3c-8df0-241e76e71e69 | none | absent | none |
+| 4f299a37-15fd-54ab-9160-42377ea51116 | none | absent | none |
+| 51820887-e61d-5af4-9cd4-c4c2cadb1869 | none | absent | none |
+| 5dfdf03b-4ea3-5a74-82b7-0e52aa17b62f | none | absent | none |
+| 632a4e41-dceb-56f9-adca-ae54edd48ab6 | none | absent | none |
+| 63aa38ba-58e9-5b00-830c-da0d0463ab8e | none | absent | none |
+| 71941b8c-bed2-544b-ab33-bec8bd97137c | none | absent | none |
+| 74c0c67e-36d6-5aec-a953-66f942460c77 | none | absent | none |
+| 814fd337-b55e-5631-a942-a5bb9c3eb4cb | none | absent | none |
+| 88ff41af-f832-5938-8c79-4078becbf164 | none | absent | none |
+| 898f822b-c984-5d55-b891-8b0a56662f00 | none | absent | none |
+| b34f2b15-afc3-53c3-a971-02bde3b3c120 | none | absent | none |
+| b5f5a7e7-288f-5df8-9e75-c1d9ac89f5b9 | none | absent | none |
+| be565a72-15c0-5164-ba9f-6a854ef69db9 | none | absent | none |
+| cf1b40df-da4a-587b-9309-ce385ecd50bc | none | absent | none |
+| debc1a35-8daa-5ae0-bc81-e62bec29e3ec | none | absent | none |
+| f1064c34-8264-5073-83f4-2f5ec227ebbe | none | absent | none |
+| f373e717-c6c7-515a-beee-d310d1610683 | none | absent | none |
+| f437f3b2-1307-5846-a9c8-47e97d111487 | none | absent | none |
+| f439d309-971b-5bb8-bc5e-94322e07435d | none | absent | none |
+| f71f9d59-220c-5fdb-8ed2-8f6837b3d1ea | none | absent | none |
 
-For the sample bundle the shipped starter scores **0.083**, meaning it is about **12× slower** than production. The informational frontier reference is **0.34** — roughly **3× slower**. The score is that raw fraction; it is never divided by the reference, and the reference gates nothing.
+## Coverage
 
-Alongside the scalar, a cross-family LLM panel votes on 14 rubrics covering routing semantics, precision policy, full dispatch, determinism, and nine enumerated anti-cheat behaviours — result memoization, call-count shortcuts, timing-context detection, value-dependent dispatch, judge manipulation, and so on. A vote only counts if the evidence it quotes is verified to exist in the source or the trajectory. If the panel is unreachable the run is recorded as not-a-trial rather than scored zero, and no model judges a solver from its own family.
+No resident bundle declares a keyword.
 
-## Bundle layout
+## Dataset structure
 
-Each promoted bundle is a Harbor task.
+| Bundle | Task | Keywords | Registration | Sealed at | Tier |
+| --- | --- | --- | --- | --- | --- |
+| [`002bdccf-0733-5656-890d-ca1e4b407cb5`](002bdccf-0733-5656-890d-ca1e4b407cb5/) | `hephaestus/topk_ragged` | absent | unregistered | unsealed | - |
+| [`0748b4fc-02f4-5aa1-b9d2-fa46141bda35`](0748b4fc-02f4-5aa1-b9d2-fa46141bda35/) | `hephaestus/rwkv7_channel_delta_decode` | absent | unregistered | unsealed | - |
+| [`094d4beb-0793-5e6d-afd9-679af6551cb5`](094d4beb-0793-5e6d-afd9-679af6551cb5/) | `hephaestus/fine_grained_softmax_topk` | absent | unregistered | unsealed | - |
+| [`0b2c79fa-fb38-5366-ae3d-1befcbb8ba2f`](0b2c79fa-fb38-5366-ae3d-1befcbb8ba2f/) | `hephaestus/shared_plus_routed_swiglu` | absent | unregistered | unsealed | - |
+| [`0d1e0a1b-58e8-5530-8760-26bcd61a0c2d`](0d1e0a1b-58e8-5530-8760-26bcd61a0c2d/) | `hephaestus/speculative_gated_delta_decode` | absent | unregistered | unsealed | - |
+| [`139ab4c6-b856-50d3-8ca5-099f83fdce34`](139ab4c6-b856-50d3-8ca5-099f83fdce34/) | `hephaestus/chunked_gdn2` | absent | unregistered | unsealed | - |
+| [`1e725592-d357-5762-8232-30aee3eebcad`](1e725592-d357-5762-8232-30aee3eebcad/) | `hephaestus/hierarchical_group_topk` | absent | unregistered | unsealed | - |
+| [`1e769a2b-b0a9-58c2-88e1-af078f24e836`](1e769a2b-b0a9-58c2-88e1-af078f24e836/) | `hephaestus/topk_prime_row` | absent | unregistered | unsealed | - |
+| [`34b7f25c-7a7d-5b45-a108-e8e3b9f2201a`](34b7f25c-7a7d-5b45-a108-e8e3b9f2201a/) | `hephaestus/relu2_glu_moe` | absent | unregistered | unsealed | - |
+| [`3924bf78-78b8-54c3-9e8f-fd3c2333c1a3`](3924bf78-78b8-54c3-9e8f-fd3c2333c1a3/) | `hephaestus/int4_wq_swiglu_moe` | absent | unregistered | unsealed | - |
+| [`3b94b44f-a20f-5b3c-8df0-241e76e71e69`](3b94b44f-a20f-5b3c-8df0-241e76e71e69/) | `hephaestus/shared_expert_routed_topk` | absent | unregistered | unsealed | - |
+| [`4f299a37-15fd-54ab-9160-42377ea51116`](4f299a37-15fd-54ab-9160-42377ea51116/) | `hephaestus/topk_segmented` | absent | unregistered | unsealed | - |
+| [`51820887-e61d-5af4-9cd4-c4c2cadb1869`](51820887-e61d-5af4-9cd4-c4c2cadb1869/) | `hephaestus/fused_softmax_topk` | absent | unregistered | unsealed | - |
+| [`5dfdf03b-4ea3-5a74-82b7-0e52aa17b62f`](5dfdf03b-4ea3-5a74-82b7-0e52aa17b62f/) | `hephaestus/sigmoid_topk_sumrenorm` | absent | unregistered | unsealed | - |
+| [`632a4e41-dceb-56f9-adca-ae54edd48ab6`](632a4e41-dceb-56f9-adca-ae54edd48ab6/) | `hephaestus/gqa_delta_decode` | absent | unregistered | unsealed | - |
+| [`63aa38ba-58e9-5b00-830c-da0d0463ab8e`](63aa38ba-58e9-5b00-830c-da0d0463ab8e/) | `hephaestus/paged_gla_decode` | absent | unregistered | unsealed | - |
+| [`71941b8c-bed2-544b-ab33-bec8bd97137c`](71941b8c-bed2-544b-ab33-bec8bd97137c/) | `hephaestus/chunked_gated_delta` | absent | unregistered | unsealed | - |
+| [`74c0c67e-36d6-5aec-a953-66f942460c77`](74c0c67e-36d6-5aec-a953-66f942460c77/) | `hephaestus/fp8_e4m3_swiglu_moe` | absent | unregistered | unsealed | - |
+| [`814fd337-b55e-5631-a942-a5bb9c3eb4cb`](814fd337-b55e-5631-a942-a5bb9c3eb4cb/) | `hephaestus/int8_state_delta_decode` | absent | unregistered | unsealed | - |
+| [`88ff41af-f832-5938-8c79-4078becbf164`](88ff41af-f832-5938-8c79-4078becbf164/) | `hephaestus/mamba2_ssd_decode` | absent | unregistered | unsealed | - |
+| [`898f822b-c984-5d55-b891-8b0a56662f00`](898f822b-c984-5d55-b891-8b0a56662f00/) | `hephaestus/chunked_comba` | absent | unregistered | unsealed | - |
+| [`b34f2b15-afc3-53c3-a971-02bde3b3c120`](b34f2b15-afc3-53c3-a971-02bde3b3c120/) | `hephaestus/topk_giant_row` | absent | unregistered | unsealed | - |
+| [`b5f5a7e7-288f-5df8-9e75-c1d9ac89f5b9`](b5f5a7e7-288f-5df8-9e75-c1d9ac89f5b9/) | `hephaestus/argmax_mixed_dtype` | absent | unregistered | unsealed | - |
+| [`be565a72-15c0-5164-ba9f-6a854ef69db9`](be565a72-15c0-5164-ba9f-6a854ef69db9/) | `hephaestus/moe_routed_fwdbwd` | absent | unregistered | unsealed | - |
+| [`cf1b40df-da4a-587b-9309-ce385ecd50bc`](cf1b40df-da4a-587b-9309-ce385ecd50bc/) | `hephaestus/capacity_dropped_switch` | absent | unregistered | unsealed | - |
+| [`debc1a35-8daa-5ae0-bc81-e62bec29e3ec`](debc1a35-8daa-5ae0-bc81-e62bec29e3ec/) | `hephaestus/fused_downproj_swiglu_moe` | absent | unregistered | unsealed | - |
+| [`f1064c34-8264-5073-83f4-2f5ec227ebbe`](f1064c34-8264-5073-83f4-2f5ec227ebbe/) | `hephaestus/chunked_dplr_delta` | absent | unregistered | unsealed | - |
+| [`f373e717-c6c7-515a-beee-d310d1610683`](f373e717-c6c7-515a-beee-d310d1610683/) | `hephaestus/chunked_rwkv6` | absent | unregistered | unsealed | - |
+| [`f437f3b2-1307-5846-a9c8-47e97d111487`](f437f3b2-1307-5846-a9c8-47e97d111487/) | `hephaestus/expert_choice` | absent | unregistered | unsealed | - |
+| [`f439d309-971b-5bb8-bc5e-94322e07435d`](f439d309-971b-5bb8-bc5e-94322e07435d/) | `hephaestus/wide_expert_swiglu_moe` | absent | unregistered | unsealed | - |
+| [`f71f9d59-220c-5fdb-8ed2-8f6837b3d1ea`](f71f9d59-220c-5fdb-8ed2-8f6837b3d1ea/) | `hephaestus/chunked_gated_delta_product` | absent | unregistered | unsealed | - |
 
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{"primaryColor":"#ff8a2a","lineColor":"#c9a35a","primaryTextColor":"#1a1206","primaryBorderColor":"#e5431f","fontFamily":"ui-sans-serif"}}}%%
-flowchart TD
-    root["<uuid>/"] --> toml["task.toml"]
-    root --> agentsurf["agent surface"]
-    root --> env["environment/"]
-    root --> tests["tests/"]
-    root --> sol["solution/"]
-    agentsurf --> af["instruction.md, kernel.py, reference.py, bench.py"]
-    env --> ef["Dockerfile, docker-compose.yaml"]
-    tests --> tv["test.sh, grade.py, grade_core.py, taskdef.py, taskdef_api.py"]
-    tests --> tr["judge.py, emit_reward.py, test_output.py"]
-    tests --> tj["hidden_shapes.json, target.json, rubrics.jsonl, anti_cheat_rubrics.json, diagnostics.jsonl"]
-    sol --> sf["solve.sh, oracle_kernel.py, TRUTH.md, policy.yaml, provenance.yaml"]
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#131a33","primaryTextColor":"#e8ecff","primaryBorderColor":"#845EF7","lineColor":"#22d3ee","fontFamily":"monospace"}}}%%
+flowchart LR
+    bundle["&lt;uuid&gt;/"]
+    bundle --> n0["task.toml<br/>runner manifest"]
+    bundle --> n1["instruction.md<br/>objective the agent reads"]
+    bundle --> n2["environment/<br/>agent sandbox image"]
+    bundle --> n3["tests/<br/>verifier, hidden from the agent"]
+    bundle --> n4["solution/<br/>private oracle"]
+    bundle --> n5["bench.py"]
+    bundle --> n6["kernel.py"]
+    bundle --> n7["reference.py"]
 ```
 
-The private boundary is exact and enforced by the image: only `instruction.md`, `kernel.py`, `reference.py` and `bench.py` are copied into the agent workspace. `tests/` and `solution/` are never staged. Of the four staged files, only `kernel.py` is editable.
-
-## Promoted bundles
-
-| uuid | task | surface | production anchor |
-|---|---|---|---|
-| [`be565a72`](be565a72-15c0-5164-ba9f-6a854ef69db9) | `hephaestus/moe_routed_fwdbwd` | forward + backward | `torch._grouped_mm` (CUTLASS grouped GEMM) |
-
-Rows land as bundles are promoted; the release target is 30. Bundles are drawn from the operator families where LLM runtime actually goes — routed mixture-of-experts, gated-delta, and their fused forward+backward surfaces. Anchors differ per family: this one is timed against a torch-native CUTLASS composition, while the gated-delta bundles are timed against a vendored reference kernel installed into the image.
-
-## Difficulty
-
-The declared hardness axis is closed at three — **Baseline** (the blocking floor every task realizes), **Hard** (the default target), and **Frontier-defeat** (the ambition tier that composes difficulty across axes). A declared tier is an authored intent and is never difficulty evidence. Measured difficulty enters only through an external signed pilot against a frozen solver registry; until that lands, this release claims no measured pass rate and publishes no score-quantile decay. Measured, never claimed.
-
-## Trajectories
-
-A rollout is evidence about one task and lands with it at `<uuid>/trajectories/<model>/run_N/`, excluded from the canonical content hash. The trajectory-grading verifier reads them as a declared Harbor artifact, and they are also what the rubric panel quotes its evidence from. **No trajectories are published yet.** The plan for this release is rollouts from two frontier models across the promoted set; this section populates with the pilot.
-
-## Working a bundle
-
-```bash
-cd be565a72-15c0-5164-ba9f-6a854ef69db9
-docker compose -f environment/docker-compose.yaml up -d
+```mermaid
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#131a33","primaryTextColor":"#e8ecff","primaryBorderColor":"#845EF7","lineColor":"#22d3ee","fontFamily":"monospace"}}}%%
+flowchart LR
+    staging["staging/"]
+    staging --> samples["samples/<br/>31 of 30"]
+    samples --> delivery["delivery/<br/>0 of 10000"]
+    delivery --> stock["stock/<br/>0 of 10000"]
 ```
 
-Inside the container, `/workspace` holds the agent surface. Edit `kernel.py`, then run the local harness:
+## Verification and quality assurance
 
-```bash
-./bench.py             # gates in graded order, then times against production
-./bench.py --json out.json
+Each bundle's signed provenance carrier holds its screening roots, screening instant, and absolute expiry. Placement moves that carrier into the private derivation set, which this page never reads, so reconcile lists no root it cannot verify here.
+
+## Reproduction
+
+Each bundle directory is a complete Harbor task: `task.toml` is the runner manifest, `instruction.md` the objective, `environment/` the sandbox image, and `tests/` the verifier. Point a Harbor runner at one bundle directory to reproduce it; `solution/` stays private.
+
+## Cite
+
+```bibtex
+@misc{hephaestus2026,
+  title        = {hephaestus: An Adversarial RL Environment for Autonomous GPU Kernel Optimization via an Iterative Agent Loop},
+  author       = {Ethara.AI Research},
+  year         = {2026},
+  note         = {Measured, never claimed. Forge the kernel, test the metal, remember what it cost.}
+}
 ```
-
-`bench.py` mirrors the graded gate order — forbidden-name scan, correctness including non-power-of-two and exact-tie shapes, bitwise determinism, written-kernel share, then a timed forward+backward pair against the production composition on a small published shape set. It deliberately does **not** reveal the score.
-
-To grade a candidate tree with the real verifier:
-
-```bash
-CANDIDATE_TREE=/path/to/workspace SCORE_PATH=/tmp/score.json tests/test.sh
-```
-
-The reward files are written by `test.sh`, which never imports the candidate, and the score's reward-relevant projection is signed with a per-run secret passed on file descriptor 3 — so a candidate that computes nothing cannot overwrite an honest zero on its way out.
 
 ## License
 
 Released under the [MIT License](LICENSE). Copyright (c) 2026 Ethara.AI. Vendored upstream repositories and any task bundles retain their own original licences.
+
+## Contact
+
+Security and benchmark-integrity disclosure: security@ethara.ai (see [SECURITY.md](SECURITY.md)). Conduct: conduct@ethara.ai (see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)).
