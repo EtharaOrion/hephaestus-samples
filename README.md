@@ -106,3 +106,9 @@ Released under the [MIT License](LICENSE). Copyright (c) 2026 Ethara.AI. Vendore
 ## Contact
 
 Security and benchmark-integrity disclosure: security@ethara.ai (see [SECURITY.md](SECURITY.md)). Conduct: conduct@ethara.ai (see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)).
+
+---
+
+## Copyright
+
+Copyright (c) 2026 Green Rider Technology LLP (Ethara AI). All rights reserved.
